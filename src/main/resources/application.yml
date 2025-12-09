@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: walloop-engine
+  datasource:
+    url: jdbc:postgresql://localhost:5432/walloop
+    username: walloop
+    password: walloop
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  cloud:
+    kubernetes:
+      enabled: true
+      discovery:
+        enabled: true
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 2000
+            readTimeout: 2000
+  main:
+    banner-mode: console
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.walloop.engine: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+clients:
+  notification:
+    url: http://localhost:8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+opentelemetry:
+  traces:
+    exporter: otlp
+  metrics:
+    exporter: otlp
+  otlp:
+    endpoint: http://localhost:4317

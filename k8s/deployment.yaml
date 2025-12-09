@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: walloop-engine
+  labels:
+    app: walloop-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: walloop-engine
+  template:
+    metadata:
+      labels:
+        app: walloop-engine
+    spec:
+      containers:
+        - name: walloop-engine
+          image: walloop-engine:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/walloop
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: walloop-db
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: walloop-db
+                  key: password
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka:8761/eureka/
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: walloop-engine
+spec:
+  selector:
+    app: walloop-engine
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
