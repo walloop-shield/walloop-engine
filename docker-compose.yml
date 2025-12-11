@@ -1,0 +1,63 @@
+﻿services:
+  app:
+    build:
+      context: .
+    image: walloop-engine:latest
+    container_name: walloop-engine
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/walloop_engine
+      SPRING_DATASOURCE_USERNAME: walloop
+      SPRING_DATASOURCE_PASSWORD: walloop
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    ports:
+      - "8080:8080"
+
+  db:
+    image: postgres:16
+    container_name: walloop-engine-db
+    environment:
+      POSTGRES_DB: walloop_engine
+      POSTGRES_USER: walloop
+      POSTGRES_PASSWORD: walloop
+    ports:
+      - "5432:5432"
+    volumes:
+      - walloop-engine-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U walloop -d walloop_engine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: walloop-engine-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.93.0
+    container_name: walloop-engine-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"
+
+volumes:
+  walloop-engine-db-data:

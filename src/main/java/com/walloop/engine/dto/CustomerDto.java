@@ -2,18 +2,22 @@ package com.walloop.engine.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CustomerDto {
-    Long id;
+    private Long id;
 
     @NotBlank
-    String name;
+    private String name;
 
     @Email
     @NotBlank
-    String email;
+    private String email;
 }

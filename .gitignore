@@ -1,0 +1,25 @@
+# Build outputs
+target/
+*.log
+*.out
+*.tmp
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Runtime / tooling
+.env
+.env.*
+logs/
+*.pid
+*.seed
+.mvn/wrapper/maven-wrapper.jar
