@@ -12,9 +12,12 @@
       otel-collector:
         condition: service_started
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/walloop_engine
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/walloop
       SPRING_DATASOURCE_USERNAME: walloop
       SPRING_DATASOURCE_PASSWORD: walloop
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: engine
+      SPRING_FLYWAY_DEFAULT_SCHEMA: engine
+      SPRING_FLYWAY_SCHEMAS: engine
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
@@ -25,7 +28,7 @@
     image: postgres:16
     container_name: walloop-engine-db
     environment:
-      POSTGRES_DB: walloop_engine
+      POSTGRES_DB: walloop
       POSTGRES_USER: walloop
       POSTGRES_PASSWORD: walloop
     ports:
@@ -33,7 +36,7 @@
     volumes:
       - walloop-engine-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U walloop -d walloop_engine"]
+      test: ["CMD-SHELL", "pg_isready -U walloop -d walloop"]
       interval: 10s
       timeout: 5s
       retries: 5
