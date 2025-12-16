@@ -21,30 +21,36 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: SPRING_DATASOURCE_URL
-              value: jdbc:postgresql://postgres:5432/walloop
-            - name: SPRING_DATASOURCE_USERNAME
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: walloop
+            - name: DB_SCHEMA
+              value: engine
+            - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: walloop-db
                   key: username
-            - name: SPRING_DATASOURCE_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: walloop-db
                   key: password
-            - name: SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA
-              value: engine
-            - name: SPRING_FLYWAY_DEFAULT_SCHEMA
-              value: engine
-            - name: SPRING_FLYWAY_SCHEMAS
-              value: engine
-            - name: SPRING_RABBITMQ_HOST
+            - name: RABBITMQ_HOST
               value: rabbitmq
-            - name: SPRING_RABBITMQ_PORT
+            - name: RABBITMQ_PORT
               value: "5672"
-            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+            - name: RABBITMQ_USERNAME
+              value: guest
+            - name: RABBITMQ_PASSWORD
+              value: guest
+            - name: EUREKA_CLIENT_SERVICE_URL
               value: http://eureka:8761/eureka/
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://walloop-otel-collector:4317
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness

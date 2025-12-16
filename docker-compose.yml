@@ -12,15 +12,19 @@
       otel-collector:
         condition: service_started
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/walloop
-      SPRING_DATASOURCE_USERNAME: walloop
-      SPRING_DATASOURCE_PASSWORD: walloop
-      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: engine
-      SPRING_FLYWAY_DEFAULT_SCHEMA: engine
-      SPRING_FLYWAY_SCHEMAS: engine
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: walloop
+      DB_SCHEMA: engine
+      DB_USERNAME: walloop
+      DB_PASSWORD: walloop
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      EUREKA_CLIENT_ENABLED: "false"
+      SPRING_PROFILES_ACTIVE: docker
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://walloop-otel-collector:4317
     ports:
       - "8080:8080"
 
@@ -55,7 +59,7 @@
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.93.0
-    container_name: walloop-engine-otel-collector
+    container_name: walloop-otel-collector
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
