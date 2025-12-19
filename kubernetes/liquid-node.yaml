@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: elementsd
-          image: elementsproject/elementsd:latest
+          image: vulpemventures/liquid:latest
           args:
             - "-chain=liquidv1"
             - "-rpcallowip=0.0.0.0/0"
@@ -27,7 +27,7 @@ spec:
             - containerPort: 7041
           volumeMounts:
             - name: elements-data
-              mountPath: /home/elements/.elements
+              mountPath: /config
           livenessProbe:
             exec:
               command:

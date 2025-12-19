@@ -71,19 +71,18 @@
       - "4317:4317"
 
   liquid-node:
-    image: elementsproject/elementsd:latest
+    image: vulpemventures/liquid:latest
     container_name: walloop-liquid-node
-    command: >
-      elementsd
-      -chain=liquidv1
-      -rpcallowip=0.0.0.0/0
-      -rpcbind=0.0.0.0
-      -rpcuser=rpcuser
-      -rpcpassword=rpcpassword
+    command:
+      - -chain=liquidv1
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0
+      - -rpcuser=rpcuser
+      - -rpcpassword=rpcpassword
     ports:
       - "7041:7041"
     volumes:
-      - liquid-data:/home/elements/.elements
+      - liquid-data:/config
     healthcheck:
       test: ["CMD", "elements-cli", "-rpcuser=rpcuser", "-rpcpassword=rpcpassword", "getblockchaininfo"]
       interval: 15s
