@@ -8,9 +8,16 @@ import org.springframework.stereotype.Service;
 public class SideShiftSwapService {
 
     private final SideShiftClient client;
+    private final SideShiftProperties properties;
 
     public SideShiftShiftResponse swapToLiquidUsdt(String depositCoin, String depositNetwork, String settleAddress) {
-        return client.createShift(depositCoin, depositNetwork, settleAddress);
+        SideShiftShiftRequest request = SideShiftShiftRequest.builder()
+                .depositCoin(depositCoin.toLowerCase())
+                .depositNetwork(depositNetwork.toLowerCase())
+                .settleCoin(properties.getSettleCoin())
+                .settleNetwork(properties.getSettleNetwork())
+                .settleAddress(settleAddress)
+                .build();
+        return client.createShift(request);
     }
 }
-

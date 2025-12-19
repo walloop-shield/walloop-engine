@@ -1,8 +1,8 @@
 package com.walloop.engine.liquid.service;
 
-import com.walloop.engine.liquid.client.LiquidRpcClient;
 import com.walloop.engine.liquid.entity.LiquidWalletEntity;
 import com.walloop.engine.liquid.repository.LiquidWalletRepository;
+import com.walloop.engine.liquid.service.LiquidRpcService;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -15,14 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class LiquidWalletServiceImpl implements LiquidWalletService {
 
-    private final LiquidRpcClient rpcClient;
+    private final LiquidRpcService rpcService;
     private final LiquidWalletRepository repository;
 
     @Override
     @Transactional
     public LiquidWalletEntity createForTransaction(UUID transactionId, UUID ownerId) {
         String label = "tx-" + transactionId;
-        String address = rpcClient.getNewAddress(label);
+        String address = rpcService.getNewAddress(label);
 
         LiquidWalletEntity entity = new LiquidWalletEntity();
         entity.setTransactionId(transactionId);
@@ -36,4 +36,3 @@ public class LiquidWalletServiceImpl implements LiquidWalletService {
         return saved;
     }
 }
-

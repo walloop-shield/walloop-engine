@@ -19,6 +19,17 @@ spring:
       direct:
         auto-startup: false
 
+liquid:
+  rpc:
+    url: http://localhost:7041
+    username: rpcuser
+    password: rpcpassword
+
+sideshift:
+  base-url: https://sideshift.ai/api/v2
+  settle-coin: usdt
+  settle-network: liquid
+
 eureka:
   client:
     enabled: false

@@ -7,25 +7,20 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "liquid.rpc")
 public class LiquidRpcProperties {
 
-    private String host = "localhost";
-    private int port = 7041;
+    /**
+     * URL base do nó Liquid (ex: http://localhost:7041).
+     */
+    private String url = "http://localhost:7041";
+
     private String username = "rpcuser";
     private String password = "rpcpassword";
 
-    public String getHost() {
-        return host;
+    public String getUrl() {
+        return url;
     }
 
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public String getUsername() {

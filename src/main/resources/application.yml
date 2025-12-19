@@ -26,8 +26,7 @@ spring:
     password: ${RABBITMQ_PASSWORD:guest}
 liquid:
   rpc:
-    host: ${LIQUID_RPC_HOST:localhost}
-    port: ${LIQUID_RPC_PORT:7041}
+    url: ${LIQUID_RPC_URL:http://localhost:7041}
     username: ${LIQUID_RPC_USERNAME:rpcuser}
     password: ${LIQUID_RPC_PASSWORD:rpcpassword}
 sideshift:
