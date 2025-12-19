@@ -6,4 +6,3 @@ public enum StepStatus {
     FAILED,
     RETRY
 }
-
