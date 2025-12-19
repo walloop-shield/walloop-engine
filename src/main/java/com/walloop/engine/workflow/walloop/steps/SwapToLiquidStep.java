@@ -15,13 +15,13 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class SwapToLiquidBtcStep implements WorkflowStep {
+public class SwapToLiquidStep implements WorkflowStep {
 
     private final SideShiftSwapService sideShiftSwapService;
 
     @Override
     public String key() {
-        return "swap_to_liquid_btc";
+        return "swap_to_liquid";
     }
 
     @Override

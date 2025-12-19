@@ -8,7 +8,7 @@ import com.walloop.engine.workflow.walloop.steps.CreateLightningWalletStep;
 import com.walloop.engine.workflow.walloop.steps.CreateLiquidWalletStep;
 import com.walloop.engine.workflow.walloop.steps.PayLiquidToLightningStep;
 import com.walloop.engine.workflow.walloop.steps.SendToCorrelatedWalletStep;
-import com.walloop.engine.workflow.walloop.steps.SwapToLiquidBtcStep;
+import com.walloop.engine.workflow.walloop.steps.SwapToLiquidStep;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ public class WalloopEngineWorkflow implements WorkflowDefinition {
     private final CalculateFeesStep calculateFeesStep;
     private final CreateLiquidWalletStep createLiquidWalletStep;
     private final CreateLightningWalletStep createLightningWalletStep;
-    private final SwapToLiquidBtcStep swapToLiquidBtcStep;
+    private final SwapToLiquidStep swapToLiquidStep;
     private final PayLiquidToLightningStep payLiquidToLightningStep;
     private final SendToCorrelatedWalletStep sendToCorrelatedWalletStep;
 
@@ -37,7 +37,7 @@ public class WalloopEngineWorkflow implements WorkflowDefinition {
                 calculateFeesStep,
                 createLiquidWalletStep,
                 createLightningWalletStep,
-                swapToLiquidBtcStep,
+                swapToLiquidStep,
                 payLiquidToLightningStep,
                 sendToCorrelatedWalletStep
         );
