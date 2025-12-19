@@ -1,0 +1,9 @@
+package com.walloop.engine.liquid.repository;
+
+import com.walloop.engine.liquid.entity.LiquidWalletEntity;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface LiquidWalletRepository extends JpaRepository<LiquidWalletEntity, UUID> {
+}
+

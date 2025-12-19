@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: walloop-liquid-node
+  labels:
+    app: walloop-liquid-node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: walloop-liquid-node
+  template:
+    metadata:
+      labels:
+        app: walloop-liquid-node
+    spec:
+      containers:
+        - name: elementsd
+          image: elementsproject/elementsd:latest
+          args:
+            - "-chain=liquidv1"
+            - "-rpcallowip=0.0.0.0/0"
+            - "-rpcbind=0.0.0.0"
+            - "-rpcuser=rpcuser"
+            - "-rpcpassword=rpcpassword"
+          ports:
+            - containerPort: 7041
+          volumeMounts:
+            - name: elements-data
+              mountPath: /home/elements/.elements
+          livenessProbe:
+            exec:
+              command:
+                - elements-cli
+                - "-rpcuser=rpcuser"
+                - "-rpcpassword=rpcpassword"
+                - getblockchaininfo
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command:
+                - elements-cli
+                - "-rpcuser=rpcuser"
+                - "-rpcpassword=rpcpassword"
+                - getblockchaininfo
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: elements-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: walloop-liquid-node
+spec:
+  selector:
+    app: walloop-liquid-node
+  ports:
+    - name: rpc
+      port: 7041
+      targetPort: 7041

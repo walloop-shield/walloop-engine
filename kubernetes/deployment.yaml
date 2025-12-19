@@ -51,6 +51,14 @@ spec:
               value: http://eureka:8761/eureka/
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://walloop-otel-collector:4317
+            - name: LIQUID_RPC_HOST
+              value: walloop-liquid-node
+            - name: LIQUID_RPC_PORT
+              value: "7041"
+            - name: LIQUID_RPC_USERNAME
+              value: rpcuser
+            - name: LIQUID_RPC_PASSWORD
+              value: rpcpassword
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness

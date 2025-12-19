@@ -25,6 +25,10 @@
       EUREKA_CLIENT_ENABLED: "false"
       SPRING_PROFILES_ACTIVE: docker
       OTEL_EXPORTER_OTLP_ENDPOINT: http://walloop-otel-collector:4317
+      LIQUID_RPC_HOST: liquid-node
+      LIQUID_RPC_PORT: 7041
+      LIQUID_RPC_USERNAME: rpcuser
+      LIQUID_RPC_PASSWORD: rpcpassword
     ports:
       - "8080:8080"
 
@@ -66,5 +70,26 @@
     ports:
       - "4317:4317"
 
+  liquid-node:
+    image: elementsproject/elementsd:latest
+    container_name: walloop-liquid-node
+    command: >
+      elementsd
+      -chain=liquidv1
+      -rpcallowip=0.0.0.0/0
+      -rpcbind=0.0.0.0
+      -rpcuser=rpcuser
+      -rpcpassword=rpcpassword
+    ports:
+      - "7041:7041"
+    volumes:
+      - liquid-data:/home/elements/.elements
+    healthcheck:
+      test: ["CMD", "elements-cli", "-rpcuser=rpcuser", "-rpcpassword=rpcpassword", "getblockchaininfo"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
 volumes:
   walloop-engine-db-data:
+  liquid-data:

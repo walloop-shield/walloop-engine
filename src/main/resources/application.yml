@@ -24,6 +24,12 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+liquid:
+  rpc:
+    host: ${LIQUID_RPC_HOST:localhost}
+    port: ${LIQUID_RPC_PORT:7041}
+    username: ${LIQUID_RPC_USERNAME:rpcuser}
+    password: ${LIQUID_RPC_PASSWORD:rpcpassword}
   cloud:
     openfeign:
       client:
