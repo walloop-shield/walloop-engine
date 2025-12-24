@@ -21,20 +21,16 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: DB_HOST
-              value: postgres
-            - name: DB_PORT
-              value: "5432"
-            - name: DB_NAME
-              value: walloop
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/walloop
             - name: DB_SCHEMA
               value: engine
-            - name: DB_USERNAME
+            - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: walloop-db
                   key: username
-            - name: DB_PASSWORD
+            - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: walloop-db
@@ -43,7 +39,9 @@ spec:
               value: rabbitmq
             - name: RABBITMQ_PORT
               value: "5672"
-            - name: RABBITMQ_USERNAME
+            - name: SPRING_RABBITMQ_VIRTUAL_HOST
+              value: /
+            - name: RABBITMQ_USER
               value: guest
             - name: RABBITMQ_PASSWORD
               value: guest

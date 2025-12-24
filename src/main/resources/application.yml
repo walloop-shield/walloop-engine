@@ -2,9 +2,9 @@ spring:
   application:
     name: walloop-engine
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:walloop}
-    username: ${DB_USERNAME:walloop}
-    password: ${DB_PASSWORD:walloop}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:walloop}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:walloop}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:walloop}}
   jpa:
     hibernate:
       ddl-auto: none
@@ -20,10 +20,11 @@ spring:
     create-schemas: true
     ignore-unsupported-database: true
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
+    host: ${SPRING_RABBITMQ_HOST:${RABBITMQ_HOST:localhost}}
+    port: ${SPRING_RABBITMQ_PORT:${RABBITMQ_PORT:5672}}
+    username: ${RABBITMQ_USER:${RABBITMQ_USERNAME:guest}}
     password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:${RABBITMQ_VHOST:/}}
 liquid:
   rpc:
     url: ${LIQUID_RPC_URL:http://localhost:7041}
@@ -75,3 +76,7 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
     fetch-registry: true
     register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    ip-address: ${FLY_PRIVATE_IP:127.0.0.1}
+    instance-id: ${FLY_APP_NAME:walloop-engine}:${FLY_PRIVATE_IP:127.0.0.1}

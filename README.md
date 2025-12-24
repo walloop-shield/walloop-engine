@@ -42,5 +42,17 @@ Core Engine Service que centraliza orquestracao de logicas, fluxos de transacao 
 - Migracao baseline `V1.0.0__init_customers.sql` cria o schema `engine`, habilita `pgcrypto` e cria a tabela `customers` com chave primaria UUID.
 - A aplicacao inicia com `spring.jpa.hibernate.ddl-auto=validate` e `baseline-on-migrate=true` para manter o schema controlado pelo Flyway.
 
+## Liquid + Bitcoin (Docker Compose)
+O `docker-compose.yml` inclui `vulpemventures/liquid` e `vulpemventures/bitcoin` para validar pegins via RPC.
+
+### Testnet (config atual)
+- `liquid-node`: `-chain=liquidtestnet` + `-validatepegin=1` com `mainchainrpc*` apontando para `bitcoin-node`.
+- `bitcoin-node`: `-testnet` e RPC em `18332`.
+
+### Mainnet (como mudar)
+1. Em `liquid-node`, troque `-chain=liquidtestnet` por `-chain=liquidv1`.
+2. Em `bitcoin-node`, remova `-testnet` (ou use `-mainnet`) e use RPC `8332`.
+3. Se expor portas, ajuste `18332:18332` para `8332:8332`.
+
 ## Kubernetes
 Use `kubernetes/deployment.yaml` como base. O deployment espera um secret `walloop-db` com `username` e `password`, e endpoints para Postgres, RabbitMQ e, se necessario, Eureka. Ajuste as credenciais para refletir o database `walloop` e o schema `engine` (variaveis `SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA`, `SPRING_FLYWAY_DEFAULT_SCHEMA` e `SPRING_FLYWAY_SCHEMAS`).

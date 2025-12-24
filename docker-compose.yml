@@ -12,15 +12,14 @@
       otel-collector:
         condition: service_started
     environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: walloop
       DB_SCHEMA: engine
-      DB_USERNAME: walloop
-      DB_PASSWORD: walloop
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/walloop
+      SPRING_DATASOURCE_USERNAME: walloop
+      SPRING_DATASOURCE_PASSWORD: walloop
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_VIRTUAL_HOST: /
+      RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       EUREKA_CLIENT_ENABLED: "false"
       SPRING_PROFILES_ACTIVE: docker
@@ -73,8 +72,17 @@
   liquid-node:
     image: vulpemventures/liquid:latest
     container_name: walloop-liquid-node
+    user: "0"
+    depends_on:
+      bitcoin-node:
+        condition: service_started
     command:
-      - -chain=liquidv1
+      - -chain=liquidtestnet
+      - -validatepegin=1
+      - -mainchainrpchost=bitcoin-node
+      - -mainchainrpcport=18332
+      - -mainchainrpcuser=rpcuser
+      - -mainchainrpcpassword=rpcpassword
       - -rpcallowip=0.0.0.0/0
       - -rpcbind=0.0.0.0
       - -rpcuser=rpcuser
@@ -89,6 +97,23 @@
       timeout: 10s
       retries: 10
 
+  bitcoin-node:
+    image: vulpemventures/bitcoin:latest
+    container_name: walloop-bitcoin-node
+    command:
+      - -testnet
+      - -server=1
+      - -txindex=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=rpcuser
+      - -rpcpassword=rpcpassword
+    ports:
+      - "18332:18332"
+    volumes:
+      - bitcoin-data:/config
+
 volumes:
   walloop-engine-db-data:
   liquid-data:
+  bitcoin-data:
