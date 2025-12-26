@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class FeeCalculationServiceImpl implements FeeCalculationService {
 
     @Override
-    public long calculateFeeSats(UUID transactionId, UUID ownerId) {
+    public long calculateFee(UUID transactionId, UUID ownerId) {
         log.info(
                 "Calculating fees via webservice (placeholder): transactionId={} ownerId={}",
                 transactionId,
@@ -19,4 +19,3 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
         return 0L;
     }
 }
-

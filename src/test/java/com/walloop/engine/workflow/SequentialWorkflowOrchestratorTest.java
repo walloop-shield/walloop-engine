@@ -2,14 +2,18 @@ package com.walloop.engine.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.Test;
 
 class SequentialWorkflowOrchestratorTest {
 
     @Test
     void pausesOnWaitingStepAndResumesToCompletion() {
-        InMemoryWorkflowExecutionRepository repository = new InMemoryWorkflowExecutionRepository();
+        TestWorkflowExecutionRepository repository = new TestWorkflowExecutionRepository();
         SequentialWorkflowOrchestrator orchestrator = new SequentialWorkflowOrchestrator(repository);
 
         WorkflowDefinition definition = new WorkflowDefinition() {
@@ -61,5 +65,27 @@ class SequentialWorkflowOrchestratorTest {
         assertThat(resumed.getStatus()).isEqualTo(WorkflowStatus.COMPLETED);
         assertThat(resumed.getNextStepIndex()).isEqualTo(2);
         assertThat(resumed.getHistory()).hasSizeGreaterThanOrEqualTo(2);
+    }
+
+    private static final class TestWorkflowExecutionRepository implements WorkflowExecutionRepository {
+        private final Map<UUID, WorkflowExecution> storage = new ConcurrentHashMap<>();
+
+        @Override
+        public WorkflowExecution save(WorkflowExecution execution) {
+            storage.put(execution.getId(), execution);
+            return execution;
+        }
+
+        @Override
+        public Optional<WorkflowExecution> findById(UUID executionId) {
+            return Optional.ofNullable(storage.get(executionId));
+        }
+
+        @Override
+        public Optional<WorkflowExecution> findByTransactionId(UUID transactionId) {
+            return storage.values().stream()
+                    .filter(execution -> transactionId.equals(execution.getTransactionId()))
+                    .findFirst();
+        }
     }
 }

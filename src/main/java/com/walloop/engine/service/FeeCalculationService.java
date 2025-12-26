@@ -4,6 +4,5 @@ import java.util.UUID;
 
 public interface FeeCalculationService {
 
-    long calculateFeeSats(UUID transactionId, UUID ownerId);
+    long calculateFee(UUID transactionId, UUID ownerId);
 }
-
