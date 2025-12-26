@@ -8,4 +8,7 @@ public interface WorkflowExecutionJpaRepository extends JpaRepository<WorkflowEx
 
     @EntityGraph(attributePaths = "steps")
     java.util.Optional<WorkflowExecutionEntity> findById(UUID id);
+
+    @EntityGraph(attributePaths = "steps")
+    java.util.Optional<WorkflowExecutionEntity> findByTransactionId(UUID transactionId);
 }

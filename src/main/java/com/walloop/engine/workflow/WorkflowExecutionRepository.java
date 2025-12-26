@@ -8,5 +8,7 @@ public interface WorkflowExecutionRepository {
     WorkflowExecution save(WorkflowExecution execution);
 
     Optional<WorkflowExecution> findById(UUID executionId);
+
+    Optional<WorkflowExecution> findByTransactionId(UUID transactionId);
 }
 

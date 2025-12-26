@@ -57,6 +57,12 @@ public class PostgresWorkflowExecutionRepository implements WorkflowExecutionRep
         return jpaRepository.findById(executionId).map(this::toDomain);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<WorkflowExecution> findByTransactionId(UUID transactionId) {
+        return jpaRepository.findByTransactionId(transactionId).map(this::toDomain);
+    }
+
     private WorkflowExecution toDomain(WorkflowExecutionEntity entity) {
         WorkflowExecution restored = WorkflowExecution.restore(
                 entity.getId(),
