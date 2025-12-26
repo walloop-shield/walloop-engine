@@ -18,14 +18,7 @@ public class AwaitWalloopDepositStep implements WorkflowStep {
 
     @Override
     public StepResult execute(WorkflowContext context) {
-        boolean deposited = context.get(WalloopWorkflowContextKeys.WALLOOP_DEPOSIT_DETECTED, Boolean.class)
-                .orElse(false);
-
-        if (!deposited) {
-            return StepResult.waiting("Waiting for deposit to appear on Walloop wallet");
-        }
-
-        log.info("Deposit detected for ownerId={}", context.get(WalloopWorkflowContextKeys.OWNER_ID).orElse(null));
-        return StepResult.completed("Deposit detected");
+        log.info("Deposit assumed already detected for ownerId={}", context.get(WalloopWorkflowContextKeys.OWNER_ID).orElse(null));
+        return StepResult.completed("Deposit detection handled externally");
     }
 }

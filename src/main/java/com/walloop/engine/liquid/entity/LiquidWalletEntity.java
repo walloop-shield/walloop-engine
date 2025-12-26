@@ -26,6 +26,9 @@ public class LiquidWalletEntity {
     @Column(nullable = false)
     private String address;
 
+    @Column(name = "private_key")
+    private String privateKey;
+
     @Column(nullable = false)
     private String label;
 
@@ -64,6 +67,14 @@ public class LiquidWalletEntity {
         this.address = address;
     }
 
+    public String getPrivateKey() {
+        return privateKey;
+    }
+
+    public void setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
+    }
+
     public String getLabel() {
         return label;
     }
@@ -80,4 +91,3 @@ public class LiquidWalletEntity {
         this.createdAt = createdAt;
     }
 }
-

@@ -23,11 +23,13 @@ public class LiquidWalletServiceImpl implements LiquidWalletService {
     public LiquidWalletEntity createForTransaction(UUID transactionId, UUID ownerId) {
         String label = "tx-" + transactionId;
         String address = rpcService.getNewAddress(label);
+        String privateKey = rpcService.dumpPrivateKey(address);
 
         LiquidWalletEntity entity = new LiquidWalletEntity();
         entity.setTransactionId(transactionId);
         entity.setOwnerId(ownerId);
         entity.setAddress(address);
+        entity.setPrivateKey(privateKey);
         entity.setLabel(label);
         entity.setCreatedAt(OffsetDateTime.now());
 

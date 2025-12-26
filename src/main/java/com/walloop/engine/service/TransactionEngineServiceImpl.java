@@ -25,28 +25,27 @@ public class TransactionEngineServiceImpl implements TransactionEngineService {
     @Override
     public void handleTransactionStart(TransactionStartMessage message) {
         WalletTransactionDetails tx = walletTransactionQueryService.require(
-                message.getTransactionId(),
+                message.getProcessId(),
                 message.getOwnerId()
         );
 
         WorkflowContext context = new WorkflowContext();
-        context.put(WalloopWorkflowContextKeys.TRANSACTION_ID, message.getTransactionId());
+        context.put(WalloopWorkflowContextKeys.PROCESS_ID, message.getProcessId());
         context.put(WalloopWorkflowContextKeys.OWNER_ID, message.getOwnerId());
         context.put(WalloopWorkflowContextKeys.CHAIN, tx.chain());
         context.put(WalloopWorkflowContextKeys.CORRELATED_ADDRESS, tx.correlatedAddress());
-        context.put(WalloopWorkflowContextKeys.NEW_ADDRESS, tx.newAddress());
-        context.put(WalloopWorkflowContextKeys.WALLOOP_DEPOSIT_DETECTED, false);
+        context.put(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, tx.newAddress());
 
         WorkflowExecution execution = orchestrator.start(
                 workflow,
                 context,
-                new WorkflowStartMetadata(message.getTransactionId(), message.getOwnerId())
+                new WorkflowStartMetadata(message.getProcessId(), message.getOwnerId())
         );
         log.info(
-                "Workflow started: executionId={} workflow={} status={} transactionId={}",
+                "Workflow started: executionId={} workflow={} status={} processId={}",
                 execution.getId(),
                 execution.getWorkflowName(),
                 execution.getStatus(),
-                message.getTransactionId());
+                message.getProcessId());
     }
 }

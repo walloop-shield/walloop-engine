@@ -13,9 +13,9 @@ public class SideShiftProperties {
     private String baseUrl = "https://sideshift.ai/api/v2";
 
     /**
-     * Coin/rede de destino (Liquid USDT).
+     * Coin/rede de destino (Liquid BTC).
      */
-    private String settleCoin = "usdt";
+    private String settleCoin = "btc";
     private String settleNetwork = "liquid";
 
     public String getBaseUrl() {
@@ -42,4 +42,3 @@ public class SideShiftProperties {
         this.settleNetwork = settleNetwork;
     }
 }
-

@@ -32,7 +32,7 @@ liquid:
     password: ${LIQUID_RPC_PASSWORD:rpcpassword}
 sideshift:
   base-url: ${SIDESHIFT_BASE_URL:https://sideshift.ai/api/v2}
-  settle-coin: ${SIDESHIFT_SETTLE_COIN:usdt}
+  settle-coin: ${SIDESHIFT_SETTLE_COIN:btc}
   settle-network: ${SIDESHIFT_SETTLE_NETWORK:liquid}
   cloud:
     openfeign:

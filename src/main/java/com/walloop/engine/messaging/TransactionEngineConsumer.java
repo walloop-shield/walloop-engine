@@ -20,10 +20,9 @@ public class TransactionEngineConsumer {
     )
     public void onTransactionStart(TransactionStartMessage message) {
         log.info(
-                "Received transaction start: transactionId={} ownerId={}",
-                message.getTransactionId(),
+                "Received transaction start: processId={} ownerId={}",
+                message.getProcessId(),
                 message.getOwnerId());
         transactionEngineService.handleTransactionStart(message);
     }
 }
-

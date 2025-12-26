@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionStartMessage {
-    private UUID transactionId;
+    private UUID processId;
     private UUID ownerId;
 }
-

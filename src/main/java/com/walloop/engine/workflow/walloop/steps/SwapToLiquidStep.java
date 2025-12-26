@@ -26,11 +26,10 @@ public class SwapToLiquidStep implements WorkflowStep {
 
     @Override
     public StepResult execute(WorkflowContext context) {
-        UUID transactionId = context.require(WalloopWorkflowContextKeys.TRANSACTION_ID, UUID.class);
+        UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
         String chain = context.require(WalloopWorkflowContextKeys.CHAIN, String.class);
-        String liquidAddress = context.get(WalloopWorkflowContextKeys.NEW_ADDRESS, String.class)
-                .orElse(context.get(WalloopWorkflowContextKeys.LIQUID_ADDRESS, String.class)
-                        .orElseThrow(() -> new IllegalStateException("Liquid address not present in context")));
+        String liquidAddress = context.get(WalloopWorkflowContextKeys.LIQUID_ADDRESS, String.class)
+                .orElseThrow(() -> new IllegalStateException("Liquid address not present in context"));
 
         SideShiftShiftResponse shift = sideShiftSwapService.swapToLiquidUsdt(chain, chain, liquidAddress);
 
@@ -38,8 +37,8 @@ public class SwapToLiquidStep implements WorkflowStep {
         context.put(WalloopWorkflowContextKeys.SWAP_DEPOSIT_ADDRESS, shift.depositAddress());
 
         log.info(
-                "SideShift swap created for tx={} depositCoin={} depositAddress={} settleCoin={} settleNetwork={}",
-                transactionId,
+                "SideShift swap created for processId={} depositCoin={} depositAddress={} settleCoin={} settleNetwork={}",
+                processId,
                 shift.depositCoin(),
                 shift.depositAddress(),
                 shift.settleCoin(),

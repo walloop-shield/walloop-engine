@@ -24,5 +24,17 @@ public class LiquidRpcService {
         }
         return response.getResult();
     }
-}
 
+    public String dumpPrivateKey(String address) {
+        LiquidRpcRequest request = LiquidRpcRequest.builder()
+                .method("dumpprivkey")
+                .params(java.util.List.of(address))
+                .build();
+
+        LiquidRpcResponse<String> response = client.call(request);
+        if (response.getError() != null) {
+            throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
+        }
+        return response.getResult();
+    }
+}
