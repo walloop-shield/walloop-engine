@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.walloop.engine.messaging.WithdrawRequestPublisher;
+import com.walloop.engine.sideshift.SideShiftPairSimulationService;
 import com.walloop.engine.sideshift.SideShiftShiftEntity;
 import com.walloop.engine.sideshift.SideShiftShiftRepository;
 import com.walloop.engine.sideshift.SideShiftShiftResponse;
@@ -29,6 +30,7 @@ class SwapToLiquidStepTest {
 
     private SideShiftSwapService sideShiftSwapService;
     private SideShiftShiftRepository shiftRepository;
+    private SideShiftPairSimulationService pairSimulationService;
     private WithdrawRequestPublisher withdrawRequestPublisher;
     private SwapToLiquidStep step;
 
@@ -36,8 +38,9 @@ class SwapToLiquidStepTest {
     void setUp() {
         sideShiftSwapService = Mockito.mock(SideShiftSwapService.class);
         shiftRepository = Mockito.mock(SideShiftShiftRepository.class);
+        pairSimulationService = Mockito.mock(SideShiftPairSimulationService.class);
         withdrawRequestPublisher = Mockito.mock(WithdrawRequestPublisher.class);
-        step = new SwapToLiquidStep(sideShiftSwapService, shiftRepository, withdrawRequestPublisher);
+        step = new SwapToLiquidStep(sideShiftSwapService, shiftRepository, pairSimulationService, withdrawRequestPublisher);
     }
 
     @Test
@@ -77,6 +80,7 @@ class SwapToLiquidStepTest {
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.WAITING);
+        verify(pairSimulationService).ensureSimulation(processId);
         verify(withdrawRequestPublisher).publish(processId);
 
         ArgumentCaptor<SideShiftShiftEntity> captor = ArgumentCaptor.forClass(SideShiftShiftEntity.class);
@@ -103,6 +107,7 @@ class SwapToLiquidStepTest {
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.COMPLETED);
+        verify(pairSimulationService).ensureSimulation(processId);
         verify(withdrawRequestPublisher, never()).publish(any());
         verify(sideShiftSwapService, never()).swapToLiquid(any(), any(), any(), any(), any(), any());
     }
@@ -125,6 +130,7 @@ class SwapToLiquidStepTest {
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.WAITING);
+        verify(pairSimulationService).ensureSimulation(processId);
         verify(withdrawRequestPublisher, never()).publish(any());
         verify(shiftRepository, never()).save(any());
     }

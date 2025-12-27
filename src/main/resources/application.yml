@@ -34,6 +34,10 @@ sideshift:
   base-url: ${SIDESHIFT_BASE_URL:https://sideshift.ai/api/v2}
   secret: ${SIDESHIFT_SECRET:}
   affiliate-id: ${SIDESHIFT_AFFILIATE_ID:}
+  simulation-from-coin: ${SIDESHIFT_SIMULATION_FROM_COIN:usdt}
+  simulation-from-network: ${SIDESHIFT_SIMULATION_FROM_NETWORK:liquid}
+  simulation-to-coin: ${SIDESHIFT_SIMULATION_TO_COIN:btc}
+  simulation-to-network: ${SIDESHIFT_SIMULATION_TO_NETWORK:liquid}
   status-cron: ${SIDESHIFT_STATUS_CRON:0 * * * * *}
   settle-coin: ${SIDESHIFT_SETTLE_COIN:btc}
   settle-network: ${SIDESHIFT_SETTLE_NETWORK:liquid}

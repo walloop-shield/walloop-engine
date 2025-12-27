@@ -1,0 +1,9 @@
+package com.walloop.engine.core;
+
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface DepositWatchRepository extends JpaRepository<DepositWatchEntity, UUID> {
+    Optional<DepositWatchEntity> findByProcessId(UUID processId);
+}

@@ -1,6 +1,7 @@
 package com.walloop.engine.workflow.walloop.steps;
 
 import com.walloop.engine.messaging.WithdrawRequestPublisher;
+import com.walloop.engine.sideshift.SideShiftPairSimulationService;
 import com.walloop.engine.sideshift.SideShiftShiftEntity;
 import com.walloop.engine.sideshift.SideShiftShiftRepository;
 import com.walloop.engine.sideshift.SideShiftShiftResponse;
@@ -25,6 +26,7 @@ public class SwapToLiquidStep implements WorkflowStep {
 
     private final SideShiftSwapService sideShiftSwapService;
     private final SideShiftShiftRepository shiftRepository;
+    private final SideShiftPairSimulationService pairSimulationService;
     private final WithdrawRequestPublisher withdrawRequestPublisher;
 
     @Override
@@ -35,6 +37,7 @@ public class SwapToLiquidStep implements WorkflowStep {
     @Override
     public StepResult execute(WorkflowContext context) {
         UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
+        pairSimulationService.ensureSimulation(processId);
         String chain = context.require(WalloopWorkflowContextKeys.CHAIN, String.class);
         String liquidAddress = context.get(WalloopWorkflowContextKeys.LIQUID_ADDRESS, String.class)
                 .orElseThrow(() -> new IllegalStateException("Liquid address not present in context"));
