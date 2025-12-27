@@ -18,6 +18,21 @@ public class SideShiftProperties {
     private String settleCoin = "btc";
     private String settleNetwork = "liquid";
 
+    /**
+     * Account secret da SideShift (header x-sideshift-secret).
+     */
+    private String secret;
+
+    /**
+     * Affiliate ID opcional.
+     */
+    private String affiliateId;
+
+    /**
+     * IP do usuario final (header x-user-ip), quando exigido.
+     */
+    private String userIp;
+
     public String getBaseUrl() {
         return baseUrl;
     }
@@ -40,5 +55,29 @@ public class SideShiftProperties {
 
     public void setSettleNetwork(String settleNetwork) {
         this.settleNetwork = settleNetwork;
+    }
+
+    public String getSecret() {
+        return secret;
+    }
+
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
+
+    public String getAffiliateId() {
+        return affiliateId;
+    }
+
+    public void setAffiliateId(String affiliateId) {
+        this.affiliateId = affiliateId;
+    }
+
+    public String getUserIp() {
+        return userIp;
+    }
+
+    public void setUserIp(String userIp) {
+        this.userIp = userIp;
     }
 }
