@@ -5,8 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
+import org.hibernate.annotations.Immutable;
 
 @Entity
+@Immutable
 @Table(name = "deposit_watch", schema = "core")
 public class DepositWatchEntity {
 
