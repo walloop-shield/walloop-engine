@@ -34,7 +34,6 @@ sideshift:
   base-url: ${SIDESHIFT_BASE_URL:https://sideshift.ai/api/v2}
   secret: ${SIDESHIFT_SECRET:}
   affiliate-id: ${SIDESHIFT_AFFILIATE_ID:}
-  user-ip: ${SIDESHIFT_USER_IP:}
   status-cron: ${SIDESHIFT_STATUS_CRON:0 * * * * *}
   settle-coin: ${SIDESHIFT_SETTLE_COIN:btc}
   settle-network: ${SIDESHIFT_SETTLE_NETWORK:liquid}

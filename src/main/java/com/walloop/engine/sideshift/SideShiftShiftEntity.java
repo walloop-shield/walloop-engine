@@ -35,6 +35,9 @@ public class SideShiftShiftEntity {
     @Column
     private String depositTxId;
 
+    @Column
+    private String userIp;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SideShiftShiftStatus status;
@@ -105,6 +108,14 @@ public class SideShiftShiftEntity {
 
     public void setDepositTxId(String depositTxId) {
         this.depositTxId = depositTxId;
+    }
+
+    public String getUserIp() {
+        return userIp;
+    }
+
+    public void setUserIp(String userIp) {
+        this.userIp = userIp;
     }
 
     public SideShiftShiftStatus getStatus() {

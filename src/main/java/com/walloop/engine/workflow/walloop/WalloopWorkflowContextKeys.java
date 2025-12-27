@@ -15,4 +15,5 @@ public final class WalloopWorkflowContextKeys {
     public static final String FEE_SATS = "feeSats";
     public static final String SWAP_ID = "swapId";
     public static final String SWAP_DEPOSIT_ADDRESS = "swapDepositAddress";
+    public static final String SESSION_TOKEN = "sessionToken";
 }

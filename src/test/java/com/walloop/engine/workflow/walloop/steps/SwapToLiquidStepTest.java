@@ -64,7 +64,14 @@ class SwapToLiquidStepTest {
 
         when(shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId))
                 .thenReturn(Optional.empty(), Optional.of(entity));
-        when(sideShiftSwapService.swapToLiquidUsdt(eq("btc"), eq("btc"), eq("liquid-addr"), eq("tx-addr"), eq(processId)))
+        when(sideShiftSwapService.swapToLiquidUsdt(
+                eq("btc"),
+                eq("btc"),
+                eq("liquid-addr"),
+                eq("tx-addr"),
+                eq(processId),
+                eq("session-token")
+        ))
                 .thenReturn(response);
 
         StepResult result = step.execute(context);
@@ -97,7 +104,7 @@ class SwapToLiquidStepTest {
 
         assertThat(result.status()).isEqualTo(StepStatus.COMPLETED);
         verify(withdrawRequestPublisher, never()).publish(any());
-        verify(sideShiftSwapService, never()).swapToLiquidUsdt(any(), any(), any(), any(), any());
+        verify(sideShiftSwapService, never()).swapToLiquidUsdt(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -129,6 +136,7 @@ class SwapToLiquidStepTest {
         context.put(WalloopWorkflowContextKeys.CHAIN, "btc");
         context.put(WalloopWorkflowContextKeys.LIQUID_ADDRESS, "liquid-addr");
         context.put(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, "tx-addr");
+        context.put(WalloopWorkflowContextKeys.SESSION_TOKEN, "session-token");
         return context;
     }
 }

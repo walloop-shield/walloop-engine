@@ -47,7 +47,7 @@ public class SideShiftStatusScheduler {
                 continue;
             }
             try {
-                SideShiftShiftStatusResponse response = client.getShift(secret, properties.getUserIp(), shift.getShiftId());
+                SideShiftShiftStatusResponse response = client.getShift(secret, shift.getUserIp(), shift.getShiftId());
                 if (isSettled(response)) {
                     markSettledAndResume(shift);
                 }

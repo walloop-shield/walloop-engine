@@ -35,6 +35,7 @@ public class TransactionEngineServiceImpl implements TransactionEngineService {
         context.put(WalloopWorkflowContextKeys.CHAIN, tx.chain());
         context.put(WalloopWorkflowContextKeys.CORRELATED_ADDRESS, tx.correlatedAddress());
         context.put(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, tx.newAddress());
+        context.put(WalloopWorkflowContextKeys.SESSION_TOKEN, message.getSessionToken());
 
         WorkflowExecution execution = orchestrator.start(
                 workflow,

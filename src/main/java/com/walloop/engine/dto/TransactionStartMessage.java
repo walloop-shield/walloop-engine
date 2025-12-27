@@ -15,4 +15,5 @@ import lombok.NoArgsConstructor;
 public class TransactionStartMessage {
     private UUID processId;
     private UUID ownerId;
+    private String sessionToken;
 }

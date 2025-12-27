@@ -2,6 +2,8 @@ package com.walloop.engine.sideshift;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walloop.engine.onboarding.LoginSessionEntity;
+import com.walloop.engine.onboarding.LoginSessionRepository;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -15,19 +17,21 @@ public class SideShiftSwapService {
     private final SideShiftProperties properties;
     private final SideShiftShiftRepository shiftRepository;
     private final ObjectMapper objectMapper;
+    private final LoginSessionRepository loginSessionRepository;
 
     public SideShiftShiftResponse swapToLiquidUsdt(
             String depositCoin,
             String depositNetwork,
             String settleAddress,
             String refundAddress,
-            UUID processId
+            UUID processId,
+            String sessionToken
     ) {
         String secret = properties.getSecret();
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException("SideShift secret is not configured");
         }
-//TODO - pegar o IP do usuario na tabela LoginSession do schema onboarding
+        String userIp = resolveUserIp(sessionToken);
         SideShiftCreateVariableShiftRequest request = SideShiftCreateVariableShiftRequest.builder()
                 .depositCoin(depositCoin.toLowerCase())
                 .depositNetwork(depositNetwork.toLowerCase())
@@ -37,13 +41,14 @@ public class SideShiftSwapService {
                 .refundAddress(refundAddress)
                 .affiliateId(properties.getAffiliateId())
                 .build();
-        SideShiftShiftResponse response = client.createVariableShift(secret, properties.getUserIp(), request);
-        persistShift(processId, request, response);
+        SideShiftShiftResponse response = client.createVariableShift(secret, userIp, request);
+        persistShift(processId, userIp, request, response);
         return response;
     }
 
     private void persistShift(
             UUID processId,
+            String userIp,
             SideShiftCreateVariableShiftRequest request,
             SideShiftShiftResponse response
     ) {
@@ -52,12 +57,23 @@ public class SideShiftSwapService {
         entity.setShiftId(response.id());
         entity.setDepositAddress(response.depositAddress());
         entity.setDepositNetwork(response.depositNetwork());
+        entity.setUserIp(userIp);
         entity.setStatus(SideShiftShiftStatus.CREATED);
         entity.setRequestPayload(toJson(request));
         entity.setResponsePayload(toJson(response));
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
         shiftRepository.save(entity);
+    }
+
+    private String resolveUserIp(String sessionToken) {
+        if (sessionToken == null || sessionToken.isBlank()) {
+            return null;
+        }
+        return loginSessionRepository.findBySessionToken(sessionToken)
+                .map(LoginSessionEntity::getIpAddress)
+                .filter(ip -> !ip.isBlank())
+                .orElse(null);
     }
 
     private String toJson(Object value) {

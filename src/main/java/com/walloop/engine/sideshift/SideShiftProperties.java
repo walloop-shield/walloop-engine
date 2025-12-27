@@ -28,10 +28,6 @@ public class SideShiftProperties {
      */
     private String affiliateId;
 
-    /**
-     * IP do usuario final (header x-user-ip), quando exigido.
-     */
-    private String userIp;
 
     public String getBaseUrl() {
         return baseUrl;
@@ -73,11 +69,4 @@ public class SideShiftProperties {
         this.affiliateId = affiliateId;
     }
 
-    public String getUserIp() {
-        return userIp;
-    }
-
-    public void setUserIp(String userIp) {
-        this.userIp = userIp;
-    }
 }
