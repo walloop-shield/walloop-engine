@@ -37,6 +37,10 @@ sideshift:
   status-cron: ${SIDESHIFT_STATUS_CRON:0 * * * * *}
   settle-coin: ${SIDESHIFT_SETTLE_COIN:btc}
   settle-network: ${SIDESHIFT_SETTLE_NETWORK:liquid}
+boltz:
+  base-url: ${BOLTZ_BASE_URL:https://api.boltz.exchange/v2}
+  status-cron: ${BOLTZ_STATUS_CRON:0 * * * * *}
+  paid-status: ${BOLTZ_PAID_STATUS:invoice.paid}
   cloud:
     openfeign:
       client:

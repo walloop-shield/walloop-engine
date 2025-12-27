@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LightningInvoiceRepository extends JpaRepository<LightningInvoiceEntity, UUID> {
     Optional<LightningInvoiceEntity> findFirstByProcessIdOrderByCreatedAtDesc(UUID processId);
+
+    java.util.List<LightningInvoiceEntity> findByBoltzSwapIdIsNotNullAndStatusNot(LightningInvoiceStatus status);
 }

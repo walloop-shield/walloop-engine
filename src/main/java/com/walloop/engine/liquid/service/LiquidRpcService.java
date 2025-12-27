@@ -37,4 +37,29 @@ public class LiquidRpcService {
         }
         return response.getResult();
     }
+
+    public void importPrivateKey(String privateKey, String label, boolean rescan) {
+        LiquidRpcRequest request = LiquidRpcRequest.builder()
+                .method("importprivkey")
+                .params(java.util.List.of(privateKey, label, rescan))
+                .build();
+
+        LiquidRpcResponse<String> response = client.call(request);
+        if (response.getError() != null) {
+            throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
+        }
+    }
+
+    public String sendToAddress(String address, String amount) {
+        LiquidRpcRequest request = LiquidRpcRequest.builder()
+                .method("sendtoaddress")
+                .params(java.util.List.of(address, amount))
+                .build();
+
+        LiquidRpcResponse<String> response = client.call(request);
+        if (response.getError() != null) {
+            throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
+        }
+        return response.getResult();
+    }
 }

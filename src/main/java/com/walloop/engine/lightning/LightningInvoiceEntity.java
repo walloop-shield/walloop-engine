@@ -28,6 +28,35 @@ public class LightningInvoiceEntity {
     @Column(nullable = false)
     private String invoice;
 
+    @Column
+    private String boltzSwapId;
+
+    @Column
+    private String boltzLockupAddress;
+
+    @Column
+    private Long boltzExpectedAmount;
+
+    @Column
+    private String liquidTxId;
+
+    @jakarta.persistence.Lob
+    @Column
+    private String boltzRequestPayload;
+
+    @jakarta.persistence.Lob
+    @Column
+    private String boltzResponsePayload;
+
+    @Column
+    private String boltzStatus;
+
+    @jakarta.persistence.Lob
+    @Column
+    private String boltzStatusPayload;
+
+    private OffsetDateTime boltzPaidAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LightningInvoiceStatus status;
@@ -68,6 +97,78 @@ public class LightningInvoiceEntity {
 
     public void setInvoice(String invoice) {
         this.invoice = invoice;
+    }
+
+    public String getBoltzSwapId() {
+        return boltzSwapId;
+    }
+
+    public void setBoltzSwapId(String boltzSwapId) {
+        this.boltzSwapId = boltzSwapId;
+    }
+
+    public String getBoltzLockupAddress() {
+        return boltzLockupAddress;
+    }
+
+    public void setBoltzLockupAddress(String boltzLockupAddress) {
+        this.boltzLockupAddress = boltzLockupAddress;
+    }
+
+    public Long getBoltzExpectedAmount() {
+        return boltzExpectedAmount;
+    }
+
+    public void setBoltzExpectedAmount(Long boltzExpectedAmount) {
+        this.boltzExpectedAmount = boltzExpectedAmount;
+    }
+
+    public String getLiquidTxId() {
+        return liquidTxId;
+    }
+
+    public void setLiquidTxId(String liquidTxId) {
+        this.liquidTxId = liquidTxId;
+    }
+
+    public String getBoltzRequestPayload() {
+        return boltzRequestPayload;
+    }
+
+    public void setBoltzRequestPayload(String boltzRequestPayload) {
+        this.boltzRequestPayload = boltzRequestPayload;
+    }
+
+    public String getBoltzResponsePayload() {
+        return boltzResponsePayload;
+    }
+
+    public void setBoltzResponsePayload(String boltzResponsePayload) {
+        this.boltzResponsePayload = boltzResponsePayload;
+    }
+
+    public String getBoltzStatus() {
+        return boltzStatus;
+    }
+
+    public void setBoltzStatus(String boltzStatus) {
+        this.boltzStatus = boltzStatus;
+    }
+
+    public String getBoltzStatusPayload() {
+        return boltzStatusPayload;
+    }
+
+    public void setBoltzStatusPayload(String boltzStatusPayload) {
+        this.boltzStatusPayload = boltzStatusPayload;
+    }
+
+    public OffsetDateTime getBoltzPaidAt() {
+        return boltzPaidAt;
+    }
+
+    public void setBoltzPaidAt(OffsetDateTime boltzPaidAt) {
+        this.boltzPaidAt = boltzPaidAt;
     }
 
     public LightningInvoiceStatus getStatus() {
