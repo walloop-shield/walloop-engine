@@ -3,6 +3,7 @@ package com.walloop.engine.liquid.service;
 import com.walloop.engine.liquid.client.LiquidRpcClient;
 import com.walloop.engine.liquid.dto.LiquidRpcRequest;
 import com.walloop.engine.liquid.dto.LiquidRpcResponse;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -61,5 +62,21 @@ public class LiquidRpcService {
             throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
         }
         return response.getResult();
+    }
+
+    public BigDecimal getReceivedByAddress(String address) {
+        LiquidRpcRequest request = LiquidRpcRequest.builder()
+                .method("getreceivedbyaddress")
+                .params(java.util.List.of(address))
+                .build();
+
+        LiquidRpcResponse<String> response = client.call(request);
+        if (response.getError() != null) {
+            throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
+        }
+        if (response.getResult() == null || response.getResult().isBlank()) {
+            throw new IllegalStateException("Liquid RPC balance not available for address=" + address);
+        }
+        return new BigDecimal(response.getResult());
     }
 }

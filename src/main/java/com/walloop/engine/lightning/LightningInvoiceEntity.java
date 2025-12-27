@@ -29,6 +29,18 @@ public class LightningInvoiceEntity {
     private String invoice;
 
     @Column
+    private String balanceBtc;
+
+    @Column
+    private Long balanceSats;
+
+    @Column
+    private Long balanceMsats;
+
+    @Column
+    private String balanceUsdt;
+
+    @Column
     private String boltzSwapId;
 
     @Column
@@ -97,6 +109,38 @@ public class LightningInvoiceEntity {
 
     public void setInvoice(String invoice) {
         this.invoice = invoice;
+    }
+
+    public String getBalanceBtc() {
+        return balanceBtc;
+    }
+
+    public void setBalanceBtc(String balanceBtc) {
+        this.balanceBtc = balanceBtc;
+    }
+
+    public Long getBalanceSats() {
+        return balanceSats;
+    }
+
+    public void setBalanceSats(Long balanceSats) {
+        this.balanceSats = balanceSats;
+    }
+
+    public Long getBalanceMsats() {
+        return balanceMsats;
+    }
+
+    public void setBalanceMsats(Long balanceMsats) {
+        this.balanceMsats = balanceMsats;
+    }
+
+    public String getBalanceUsdt() {
+        return balanceUsdt;
+    }
+
+    public void setBalanceUsdt(String balanceUsdt) {
+        this.balanceUsdt = balanceUsdt;
     }
 
     public String getBoltzSwapId() {
