@@ -6,8 +6,7 @@ import java.util.UUID;
 
 public interface WalletTransactionQueryService {
 
-    Optional<WalletTransactionDetails> find(UUID transactionId, UUID ownerId);
+    Optional<WalletTransactionDetails> find(UUID id, UUID ownerId);
 
-    WalletTransactionDetails require(UUID transactionId, UUID ownerId);
+    WalletTransactionDetails require(UUID id, UUID ownerId);
 }
-

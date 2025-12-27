@@ -9,8 +9,8 @@ public record WalletTransactionDetails(
         String chain,
         String correlatedAddress,
         String newAddress,
+        String newAddress2,
         OffsetDateTime createdAt,
         String status
 ) {
 }
-

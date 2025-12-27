@@ -26,6 +26,9 @@ public class WalletTransactionEntity {
     @Column(nullable = false)
     private String newAddress;
 
+    @Column
+    private String newAddress2;
+
     @Column(nullable = false)
     private OffsetDateTime createdAt;
 
@@ -72,6 +75,14 @@ public class WalletTransactionEntity {
         this.newAddress = newAddress;
     }
 
+    public String getNewAddress2() {
+        return newAddress2;
+    }
+
+    public void setNewAddress2(String newAddress2) {
+        this.newAddress2 = newAddress2;
+    }
+
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
@@ -88,4 +99,3 @@ public class WalletTransactionEntity {
         this.status = status;
     }
 }
-

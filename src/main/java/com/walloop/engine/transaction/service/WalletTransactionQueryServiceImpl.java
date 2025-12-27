@@ -17,15 +17,15 @@ public class WalletTransactionQueryServiceImpl implements WalletTransactionQuery
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<WalletTransactionDetails> find(UUID transactionId, UUID ownerId) {
-        return repository.findByIdAndOwnerId(transactionId, ownerId).map(this::toDetails);
+    public Optional<WalletTransactionDetails> find(UUID id, UUID ownerId) {
+        return repository.findByIdAndOwnerId(id, ownerId).map(this::toDetails);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public WalletTransactionDetails require(UUID transactionId, UUID ownerId) {
-        return find(transactionId, ownerId).orElseThrow(() -> new IllegalArgumentException(
-                "Transaction not found for id=" + transactionId + " ownerId=" + ownerId));
+    public WalletTransactionDetails require(UUID id, UUID ownerId) {
+        return find(id, ownerId).orElseThrow(() -> new IllegalArgumentException(
+                "Transaction not found for id=" + id + " ownerId=" + ownerId));
     }
 
     private WalletTransactionDetails toDetails(WalletTransactionEntity entity) {
@@ -35,9 +35,9 @@ public class WalletTransactionQueryServiceImpl implements WalletTransactionQuery
                 entity.getChain(),
                 entity.getCorrelatedAddress(),
                 entity.getNewAddress(),
+                entity.getNewAddress2(),
                 entity.getCreatedAt(),
                 entity.getStatus()
         );
     }
 }
-

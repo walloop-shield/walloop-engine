@@ -41,6 +41,17 @@ sideshift:
   status-cron: ${SIDESHIFT_STATUS_CRON:0 * * * * *}
   settle-coin: ${SIDESHIFT_SETTLE_COIN:btc}
   settle-network: ${SIDESHIFT_SETTLE_NETWORK:liquid}
+fixedfloat:
+  base-url: ${FIXEDFLOAT_BASE_URL:https://ff.io/api/v2}
+  api-key: ${FIXEDFLOAT_API_KEY:}
+  api-secret: ${FIXEDFLOAT_API_SECRET:}
+  order-type: ${FIXEDFLOAT_ORDER_TYPE:float}
+  direction: ${FIXEDFLOAT_DIRECTION:from}
+  from-ccy: ${FIXEDFLOAT_FROM_CCY:BTCLN}
+  required-confirmations: ${FIXEDFLOAT_REQUIRED_CONFIRMATIONS:1}
+  refcode: ${FIXEDFLOAT_REFCODE:}
+  afftax: ${FIXEDFLOAT_AFFTAX:}
+  status-cron: ${FIXEDFLOAT_STATUS_CRON:0 * * * * *}
 boltz:
   base-url: ${BOLTZ_BASE_URL:https://api.boltz.exchange/v2}
   status-cron: ${BOLTZ_STATUS_CRON:0 * * * * *}

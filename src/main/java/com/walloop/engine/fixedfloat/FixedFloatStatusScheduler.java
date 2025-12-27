@@ -1,4 +1,4 @@
-package com.walloop.engine.sideshift;
+package com.walloop.engine.fixedfloat;
 
 import com.walloop.engine.transaction.dto.WalletTransactionDetails;
 import com.walloop.engine.transaction.service.WalletTransactionQueryService;
@@ -8,7 +8,6 @@ import com.walloop.engine.workflow.WorkflowExecutionRepository;
 import com.walloop.engine.workflow.WorkflowOrchestrator;
 import com.walloop.engine.workflow.walloop.WalloopEngineWorkflow;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,72 +18,41 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class SideShiftStatusScheduler {
+public class FixedFloatStatusScheduler {
 
-    private final SideShiftShiftRepository shiftRepository;
-    private final SideShiftClient client;
-    private final SideShiftProperties properties;
+    private final FixedFloatOrderRepository orderRepository;
+    private final FixedFloatOrderService orderService;
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final WalletTransactionQueryService walletTransactionQueryService;
     private final WorkflowOrchestrator orchestrator;
     private final WalloopEngineWorkflow workflow;
 
-    @Scheduled(cron = "${sideshift.status-cron:0 * * * * *}")
-    public void pollShiftStatuses() {
-        String secret = properties.getSecret();
-        if (secret == null || secret.isBlank()) {
-            log.debug("SideShift secret not configured; skipping status polling");
+    @Scheduled(cron = "${fixedfloat.status-cron:0 * * * * *}")
+    public void pollOrders() {
+        List<FixedFloatOrderEntity> orders = orderRepository.findByCompletedAtIsNull();
+        if (orders.isEmpty()) {
             return;
         }
 
-        List<SideShiftShiftEntity> shifts = shiftRepository.findByStatusIsNullOrStatusNot(SideShiftShiftStatus.SETTLED);
-        if (shifts.isEmpty()) {
-            return;
-        }
-
-        for (SideShiftShiftEntity shift : shifts) {
-            if (shift.getShiftId() == null || shift.getShiftId().isBlank()) {
-                continue;
-            }
+        for (FixedFloatOrderEntity order : orders) {
             try {
-                SideShiftShiftStatusResponse response = client.getShift(secret, shift.getUserIp(), shift.getShiftId());
-                if (isSettled(response)) {
-                    markSettledAndResume(shift);
+                FixedFloatOrderEntity updated = orderService.refreshOrder(order);
+                if (updated.getCompletedAt() != null) {
+                    resumeWorkflow(updated.getProcessId());
                 }
             } catch (Exception e) {
-                log.warn("Failed to poll SideShift shiftId={} processId={}", shift.getShiftId(), shift.getProcessId(), e);
+                log.warn("Failed to poll FixedFloat orderId={}", order.getOrderId(), e);
             }
         }
     }
 
-    private boolean isSettled(SideShiftShiftStatusResponse response) {
-        if (response == null) {
-            return false;
-        }
-        if ("settled".equalsIgnoreCase(response.status())) {
-            return true;
-        }
-        if (response.deposits() == null) {
-            return false;
-        }
-        return response.deposits().stream()
-                .anyMatch(deposit -> "settled".equalsIgnoreCase(deposit.status()));
-    }
-
-    private void markSettledAndResume(SideShiftShiftEntity shift) {
-        shift.setStatus(SideShiftShiftStatus.SETTLED);
-        shift.setSettledAt(OffsetDateTime.now());
-        shift.setUpdatedAt(OffsetDateTime.now());
-        shiftRepository.save(shift);
-
-        UUID processId = shift.getProcessId();
+    private void resumeWorkflow(UUID processId) {
         WorkflowExecution execution = workflowExecutionRepository.findByTransactionId(processId)
                 .orElse(null);
         if (execution == null) {
             log.warn("Workflow execution not found for processId={}", processId);
             return;
         }
-
         UUID ownerId = execution.getOwnerId();
         if (ownerId == null) {
             log.warn("OwnerId missing for processId={}", processId);
@@ -93,7 +61,7 @@ public class SideShiftStatusScheduler {
 
         WorkflowContext context = buildContext(processId, ownerId);
         orchestrator.resume(execution.getId(), workflow, context);
-        log.info("Workflow resumed after SideShift settlement processId={} executionId={}", processId, execution.getId());
+        log.info("Workflow resumed after FixedFloat completion processId={} executionId={}", processId, execution.getId());
     }
 
     private WorkflowContext buildContext(UUID processId, UUID ownerId) {

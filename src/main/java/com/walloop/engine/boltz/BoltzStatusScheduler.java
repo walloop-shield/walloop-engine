@@ -184,6 +184,7 @@ public class BoltzStatusScheduler {
         context.put(WalloopWorkflowContextKeys.OWNER_ID, ownerId);
         context.put(WalloopWorkflowContextKeys.CHAIN, tx.chain());
         context.put(WalloopWorkflowContextKeys.CORRELATED_ADDRESS, tx.correlatedAddress());
+        context.put(WalloopWorkflowContextKeys.DESTINATION_ADDRESS, tx.newAddress2());
         context.put(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, tx.newAddress());
         return context;
     }
