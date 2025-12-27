@@ -71,6 +71,8 @@ management:
 clients:
   notification:
     url: ${NOTIFICATION_URL:http://localhost:8081}
+  lightning:
+    url: ${LIGHTNING_URL:http://localhost:8083}
 
 eureka:
   client:
