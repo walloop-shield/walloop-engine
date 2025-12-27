@@ -43,7 +43,7 @@ public class SwapToLiquidStep implements WorkflowStep {
 
         Optional<SideShiftShiftEntity> existingShift = shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId);
         SideShiftShiftEntity shiftEntity = existingShift.orElseGet(() -> {
-            SideShiftShiftResponse shift = sideShiftSwapService.swapToLiquidUsdt(
+            SideShiftShiftResponse shift = sideShiftSwapService.swapToLiquid(
                     chain,
                     chain,
                     liquidAddress,

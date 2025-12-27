@@ -54,7 +54,7 @@ class SideShiftSwapServiceTest {
                 .thenReturn(response);
 
         UUID processId = UUID.randomUUID();
-        service.swapToLiquidUsdt("btc", "btc", "settle-addr", "refund-addr", processId, "token-123");
+        service.swapToLiquid("btc", "btc", "settle-addr", "refund-addr", processId, "token-123");
 
         ArgumentCaptor<SideShiftShiftEntity> captor = ArgumentCaptor.forClass(SideShiftShiftEntity.class);
         verify(shiftRepository).save(captor.capture());

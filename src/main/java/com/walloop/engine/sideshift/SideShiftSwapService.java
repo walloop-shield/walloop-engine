@@ -19,7 +19,7 @@ public class SideShiftSwapService {
     private final ObjectMapper objectMapper;
     private final LoginSessionRepository loginSessionRepository;
 
-    public SideShiftShiftResponse swapToLiquidUsdt(
+    public SideShiftShiftResponse swapToLiquid(
             String depositCoin,
             String depositNetwork,
             String settleAddress,

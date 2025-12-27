@@ -64,7 +64,7 @@ class SwapToLiquidStepTest {
 
         when(shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId))
                 .thenReturn(Optional.empty(), Optional.of(entity));
-        when(sideShiftSwapService.swapToLiquidUsdt(
+        when(sideShiftSwapService.swapToLiquid(
                 eq("btc"),
                 eq("btc"),
                 eq("liquid-addr"),
@@ -104,7 +104,7 @@ class SwapToLiquidStepTest {
 
         assertThat(result.status()).isEqualTo(StepStatus.COMPLETED);
         verify(withdrawRequestPublisher, never()).publish(any());
-        verify(sideShiftSwapService, never()).swapToLiquidUsdt(any(), any(), any(), any(), any(), any());
+        verify(sideShiftSwapService, never()).swapToLiquid(any(), any(), any(), any(), any(), any());
     }
 
     @Test

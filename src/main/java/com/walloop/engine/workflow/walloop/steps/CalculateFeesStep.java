@@ -28,7 +28,7 @@ public class CalculateFeesStep implements WorkflowStep {
         UUID ownerId = context.require(WalloopWorkflowContextKeys.OWNER_ID, UUID.class);
 
         long fee = feeCalculationService.calculateFee(processId, ownerId);
-        context.put(WalloopWorkflowContextKeys.FEE_SATS, fee);
+        context.put(WalloopWorkflowContextKeys.FEE, fee);
 
         log.info("Fee calculated (usdt)={} processId={}", fee, processId);
         return StepResult.completed("Fee calculated");
