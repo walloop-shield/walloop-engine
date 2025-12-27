@@ -65,6 +65,13 @@ public class LightningInvoiceEntity {
 
     @jakarta.persistence.Lob
     @Column
+    private String boltzDecodedTransactionPayload;
+
+    @Column
+    private Long boltzPaidAmountSats;
+
+    @jakarta.persistence.Lob
+    @Column
     private String boltzStatusPayload;
 
     private OffsetDateTime boltzPaidAt;
@@ -197,6 +204,22 @@ public class LightningInvoiceEntity {
 
     public void setBoltzStatus(String boltzStatus) {
         this.boltzStatus = boltzStatus;
+    }
+
+    public String getBoltzDecodedTransactionPayload() {
+        return boltzDecodedTransactionPayload;
+    }
+
+    public void setBoltzDecodedTransactionPayload(String boltzDecodedTransactionPayload) {
+        this.boltzDecodedTransactionPayload = boltzDecodedTransactionPayload;
+    }
+
+    public Long getBoltzPaidAmountSats() {
+        return boltzPaidAmountSats;
+    }
+
+    public void setBoltzPaidAmountSats(Long boltzPaidAmountSats) {
+        this.boltzPaidAmountSats = boltzPaidAmountSats;
     }
 
     public String getBoltzStatusPayload() {

@@ -15,6 +15,5 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface LiquidRpcClient {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    LiquidRpcResponse<String> call(@RequestBody LiquidRpcRequest request);
+    LiquidRpcResponse<Object> call(@RequestBody LiquidRpcRequest request);
 }
-

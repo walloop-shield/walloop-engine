@@ -4,6 +4,7 @@ import com.walloop.engine.liquid.client.LiquidRpcClient;
 import com.walloop.engine.liquid.dto.LiquidRpcRequest;
 import com.walloop.engine.liquid.dto.LiquidRpcResponse;
 import java.math.BigDecimal;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +20,15 @@ public class LiquidRpcService {
                 .params(java.util.List.of(label, "bech32"))
                 .build();
 
-        LiquidRpcResponse<String> response = client.call(request);
+        LiquidRpcResponse<Object> response = client.call(request);
         if (response.getError() != null) {
             throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
         }
-        return response.getResult();
+        Object result = response.getResult();
+        if (result == null) {
+            throw new IllegalStateException("Liquid RPC result missing for getnewaddress");
+        }
+        return result.toString();
     }
 
     public String dumpPrivateKey(String address) {
@@ -32,11 +37,15 @@ public class LiquidRpcService {
                 .params(java.util.List.of(address))
                 .build();
 
-        LiquidRpcResponse<String> response = client.call(request);
+        LiquidRpcResponse<Object> response = client.call(request);
         if (response.getError() != null) {
             throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
         }
-        return response.getResult();
+        Object result = response.getResult();
+        if (result == null) {
+            throw new IllegalStateException("Liquid RPC result missing for dumpprivkey");
+        }
+        return result.toString();
     }
 
     public void importPrivateKey(String privateKey, String label, boolean rescan) {
@@ -45,7 +54,7 @@ public class LiquidRpcService {
                 .params(java.util.List.of(privateKey, label, rescan))
                 .build();
 
-        LiquidRpcResponse<String> response = client.call(request);
+        LiquidRpcResponse<Object> response = client.call(request);
         if (response.getError() != null) {
             throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
         }
@@ -57,11 +66,15 @@ public class LiquidRpcService {
                 .params(java.util.List.of(address, amount))
                 .build();
 
-        LiquidRpcResponse<String> response = client.call(request);
+        LiquidRpcResponse<Object> response = client.call(request);
         if (response.getError() != null) {
             throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
         }
-        return response.getResult();
+        Object result = response.getResult();
+        if (result == null) {
+            throw new IllegalStateException("Liquid RPC result missing for sendtoaddress");
+        }
+        return result.toString();
     }
 
     public BigDecimal getReceivedByAddress(String address) {
@@ -70,13 +83,31 @@ public class LiquidRpcService {
                 .params(java.util.List.of(address))
                 .build();
 
-        LiquidRpcResponse<String> response = client.call(request);
+        LiquidRpcResponse<Object> response = client.call(request);
         if (response.getError() != null) {
             throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
         }
-        if (response.getResult() == null || response.getResult().isBlank()) {
+        Object result = response.getResult();
+        if (result == null) {
             throw new IllegalStateException("Liquid RPC balance not available for address=" + address);
         }
-        return new BigDecimal(response.getResult());
+        return new BigDecimal(result.toString());
+    }
+
+    public Object decodeRawTransaction(String hex) {
+        LiquidRpcRequest request = LiquidRpcRequest.builder()
+                .method("decoderawtransaction")
+                .params(java.util.List.of(hex))
+                .build();
+
+        LiquidRpcResponse<Object> response = client.call(request);
+        if (response.getError() != null) {
+            throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
+        }
+        Object result = response.getResult();
+        if (result == null) {
+            throw new IllegalStateException("Liquid RPC result missing for decoderawtransaction");
+        }
+        return result;
     }
 }
