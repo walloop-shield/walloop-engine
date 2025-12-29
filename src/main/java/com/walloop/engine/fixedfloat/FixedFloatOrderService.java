@@ -21,6 +21,10 @@ import org.springframework.stereotype.Service;
 public class FixedFloatOrderService {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
+    private static final String ORDER_TYPE = "float";
+    private static final String DIRECTION = "from";
+    private static final String FROM_CCY = "BTCLN";
+    private static final int REQUIRED_CONFIRMATIONS = 1;
 
     private final FixedFloatClient client;
     private final FixedFloatProperties properties;
@@ -34,17 +38,17 @@ public class FixedFloatOrderService {
             return existing.get();
         }
 
-        String fromCcy = properties.getFromCcy();
+        String fromCcy = FROM_CCY;
         String toCcy = resolveToCcy(chain);
         BigDecimal amountBtc = BigDecimal.valueOf(amountSats)
                 .movePointLeft(8)
                 .setScale(8, RoundingMode.DOWN);
 
         FixedFloatCreateOrderRequest request = new FixedFloatCreateOrderRequest(
-                properties.getOrderType(),
+                ORDER_TYPE,
                 fromCcy,
                 toCcy,
-                properties.getDirection(),
+                DIRECTION,
                 amountBtc,
                 toAddress,
                 null,
@@ -116,7 +120,7 @@ public class FixedFloatOrderService {
 
     public boolean isCompleted(FixedFloatOrderEntity entity) {
         Integer confirmations = entity.getConfirmations();
-        int required = properties.getRequiredConfirmations() == null ? 1 : properties.getRequiredConfirmations();
+        int required = REQUIRED_CONFIRMATIONS;
         if (confirmations == null) {
             return false;
         }

@@ -12,10 +12,6 @@ public class FixedFloatProperties {
     private String baseUrl = "https://ff.io/api/v2";
     private String apiKey;
     private String apiSecret;
-    private String orderType = "float";
-    private String direction = "from";
-    private String fromCcy = "BTCLN";
-    private Integer requiredConfirmations = 1;
     private String refcode;
     private String afftax;
     private Map<String, String> toCcyOverrides = new HashMap<>();
@@ -44,37 +40,6 @@ public class FixedFloatProperties {
         this.apiSecret = apiSecret;
     }
 
-    public String getOrderType() {
-        return orderType;
-    }
-
-    public void setOrderType(String orderType) {
-        this.orderType = orderType;
-    }
-
-    public String getDirection() {
-        return direction;
-    }
-
-    public void setDirection(String direction) {
-        this.direction = direction;
-    }
-
-    public String getFromCcy() {
-        return fromCcy;
-    }
-
-    public void setFromCcy(String fromCcy) {
-        this.fromCcy = fromCcy;
-    }
-
-    public Integer getRequiredConfirmations() {
-        return requiredConfirmations;
-    }
-
-    public void setRequiredConfirmations(Integer requiredConfirmations) {
-        this.requiredConfirmations = requiredConfirmations;
-    }
 
     public String getRefcode() {
         return refcode;

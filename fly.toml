@@ -9,7 +9,7 @@ primary_region = "gru"
   MANAGEMENT_TRACING_ENABLED = "false"
   OTEL_TRACES_EXPORTER = "none"
   EUREKA_CLIENT_ENABLED = "true"
-  EUREKA_CLIENT_SERVICE_URL = "http://walloop-edge.fly.internal:8761/eureka"
+  EUREKA_CLIENT_SERVICE_URL = "http://walloop-edge.internal:8761/eureka"
   SPRING_RABBITMQ_SSL_ENABLED = "true"
 
 [http_service]

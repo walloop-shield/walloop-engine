@@ -32,30 +32,20 @@ liquid:
     password: ${LIQUID_RPC_PASSWORD:rpcpassword}
 sideshift:
   base-url: ${SIDESHIFT_BASE_URL:https://sideshift.ai/api/v2}
-  secret: ${SIDESHIFT_SECRET:}
-  affiliate-id: ${SIDESHIFT_AFFILIATE_ID:}
-  simulation-from-coin: ${SIDESHIFT_SIMULATION_FROM_COIN:usdt}
-  simulation-from-network: ${SIDESHIFT_SIMULATION_FROM_NETWORK:liquid}
-  simulation-to-coin: ${SIDESHIFT_SIMULATION_TO_COIN:btc}
-  simulation-to-network: ${SIDESHIFT_SIMULATION_TO_NETWORK:liquid}
-  status-cron: ${SIDESHIFT_STATUS_CRON:0 * * * * *}
-  settle-coin: ${SIDESHIFT_SETTLE_COIN:btc}
-  settle-network: ${SIDESHIFT_SETTLE_NETWORK:liquid}
+  secret: ${SIDESHIFT_SECRET:***REMOVED***}
+  affiliate-id: ${SIDESHIFT_AFFILIATE_ID:***REMOVED***}
+  status-cron: 0 * * * * *
 fixedfloat:
   base-url: ${FIXEDFLOAT_BASE_URL:https://ff.io/api/v2}
-  api-key: ${FIXEDFLOAT_API_KEY:}
-  api-secret: ${FIXEDFLOAT_API_SECRET:}
-  order-type: ${FIXEDFLOAT_ORDER_TYPE:float}
-  direction: ${FIXEDFLOAT_DIRECTION:from}
-  from-ccy: ${FIXEDFLOAT_FROM_CCY:BTCLN}
-  required-confirmations: ${FIXEDFLOAT_REQUIRED_CONFIRMATIONS:1}
-  refcode: ${FIXEDFLOAT_REFCODE:}
+  api-key: ${FIXEDFLOAT_API_KEY:***REMOVED***}
+  api-secret: ${FIXEDFLOAT_API_SECRET:***REMOVED***}
+  refcode: ${FIXEDFLOAT_REFCODE:***REMOVED***}
   afftax: ${FIXEDFLOAT_AFFTAX:}
-  status-cron: ${FIXEDFLOAT_STATUS_CRON:0 * * * * *}
+  status-cron: 0 * * * * *
 boltz:
   base-url: ${BOLTZ_BASE_URL:https://api.boltz.exchange/v2}
-  status-cron: ${BOLTZ_STATUS_CRON:0 * * * * *}
-  paid-status: ${BOLTZ_PAID_STATUS:invoice.paid}
+  status-cron: 0 * * * * *
+  paid-status: invoice.paid
   cloud:
     openfeign:
       client:
@@ -70,17 +60,13 @@ boltz:
 server:
   port: ${SERVER_PORT:8080}
 
-logging:
-  level:
-    root: INFO
-    com.walloop.engine: DEBUG
-
 management:
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
   tracing:
+    enabled: false
     sampling:
       probability: 1.0
   otlp:
@@ -88,8 +74,6 @@ management:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
 
 clients:
-  notification:
-    url: ${NOTIFICATION_URL:http://localhost:8081}
   lightning:
     url: ${LIGHTNING_URL:http://localhost:8083}
 

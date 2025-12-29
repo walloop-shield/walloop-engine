@@ -37,8 +37,8 @@ public class SwapToLiquidStep implements WorkflowStep {
     @Override
     public StepResult execute(WorkflowContext context) {
         UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
-        pairSimulationService.ensureSimulation(processId);
         String chain = context.require(WalloopWorkflowContextKeys.CHAIN, String.class);
+        pairSimulationService.ensureSimulation(processId, chain, chain);
         String liquidAddress = context.get(WalloopWorkflowContextKeys.LIQUID_ADDRESS, String.class)
                 .orElseThrow(() -> new IllegalStateException("Liquid address not present in context"));
         String refundAddress = context.require(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, String.class);

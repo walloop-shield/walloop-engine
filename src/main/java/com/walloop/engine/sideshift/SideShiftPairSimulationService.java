@@ -20,15 +20,15 @@ public class SideShiftPairSimulationService {
     private final ObjectMapper objectMapper;
     private final DepositWatchRepository depositWatchRepository;
 
-    public void ensureSimulation(UUID processId) {
+    public void ensureSimulation(UUID processId, String depositCoin, String depositNetwork) {
         if (repository.findFirstByProcessIdOrderByCreatedAtDesc(processId).isPresent()) {
             return;
         }
 
-        String fromCoin = properties.getSimulationFromCoin();
-        String fromNetwork = properties.getSimulationFromNetwork();
-        String toCoin = properties.getSimulationToCoin();
-        String toNetwork = properties.getSimulationToNetwork();
+        String fromCoin = depositCoin;
+        String fromNetwork = depositNetwork;
+        String toCoin = SideShiftSwapService.SETTLE_COIN;
+        String toNetwork = SideShiftSwapService.SETTLE_NETWORK;
 
         DepositWatchEntity watch = depositWatchRepository.findByProcessId(processId)
                 .orElseThrow(() -> new IllegalStateException("Deposit watch not found for processId=" + processId));

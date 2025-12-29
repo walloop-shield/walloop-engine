@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SideShiftSwapService {
 
+    public static final String SETTLE_COIN = "btc";
+    public static final String SETTLE_NETWORK = "liquid";
+
     private final SideShiftClient client;
     private final SideShiftProperties properties;
     private final SideShiftShiftRepository shiftRepository;
@@ -35,8 +38,8 @@ public class SideShiftSwapService {
         SideShiftCreateVariableShiftRequest request = SideShiftCreateVariableShiftRequest.builder()
                 .depositCoin(depositCoin.toLowerCase())
                 .depositNetwork(depositNetwork.toLowerCase())
-                .settleCoin(properties.getSettleCoin())
-                .settleNetwork(properties.getSettleNetwork())
+                .settleCoin(SETTLE_COIN)
+                .settleNetwork(SETTLE_NETWORK)
                 .settleAddress(settleAddress)
                 .refundAddress(refundAddress)
                 .affiliateId(properties.getAffiliateId())
