@@ -73,9 +73,19 @@ management:
     tracing:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
 
-clients:
-  lightning:
-    url: ${LIGHTNING_URL:http://localhost:8083}
+org:
+  tbk:
+    lightning:
+      lnd:
+        grpc:
+          enabled: true
+          host: ${LND_GRPC_HOST:walloop-lightning-node.internal}
+          port: ${LND_GRPC_PORT:10009}
+          macaroon-base64: ${LND_GRPC_MACAROON_BASE64:}
+          cert-base64: ${LND_GRPC_CERT_BASE64:}
+          macaroon-file-path: ${LND_GRPC_MACAROON_FILE:}
+          cert-file-path: ${LND_GRPC_CERT_FILE:}
+          
 
 eureka:
   client:

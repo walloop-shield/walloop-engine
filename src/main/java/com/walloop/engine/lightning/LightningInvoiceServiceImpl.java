@@ -10,6 +10,11 @@ import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.lightningj.lnd.wrapper.SynchronousLndAPI;
+import org.lightningj.lnd.wrapper.StatusException;
+import org.lightningj.lnd.wrapper.ValidationException;
+import org.lightningj.lnd.wrapper.message.AddInvoiceResponse;
+import org.lightningj.lnd.wrapper.message.Invoice;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,7 +22,7 @@ import org.springframework.stereotype.Service;
 public class LightningInvoiceServiceImpl implements LightningInvoiceService {
 
     private final LightningInvoiceRepository repository;
-    private final LightningInvoiceClient client;
+    private final SynchronousLndAPI lndApi;
     private final LiquidWalletRepository liquidWalletRepository;
     private final LiquidRpcService liquidRpcService;
     private final SideShiftPairSimulationRepository pairSimulationRepository;
@@ -31,17 +36,15 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
 
     private String createInvoice(UUID processId, UUID ownerId) {
         BalanceSnapshot snapshot = buildBalanceSnapshot(processId, ownerId);
-        LightningInvoiceResponse response = client.createInvoice(
-                new LightningInvoiceRequest(processId, ownerId, snapshot.balanceMsats())
-        );
-        if (response == null || response.invoice() == null || response.invoice().isBlank()) {
-            throw new IllegalStateException("Lightning invoice not returned by provider");
+        String invoice = createInvoiceViaLnd(processId, snapshot.balanceMsats());
+        if (invoice == null || invoice.isBlank()) {
+            throw new IllegalStateException("Lightning invoice not returned by LND");
         }
 
         LightningInvoiceEntity entity = new LightningInvoiceEntity();
         entity.setProcessId(processId);
         entity.setOwnerId(ownerId);
-        entity.setInvoice(response.invoice());
+        entity.setInvoice(invoice);
         entity.setBalanceBtc(snapshot.balanceBtc());
         entity.setBalanceSats(snapshot.balanceSats());
         entity.setBalanceMsats(snapshot.balanceMsats());
@@ -50,7 +53,19 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
         repository.save(entity);
-        return response.invoice();
+        return invoice;
+    }
+
+    private String createInvoiceViaLnd(UUID processId, long amountMsats) {
+        try {
+            Invoice invoice = new Invoice();
+            invoice.setMemo("walloop:" + processId);
+            invoice.setValueMsat(amountMsats);
+            AddInvoiceResponse response = lndApi.addInvoice(invoice);
+            return response.getPaymentRequest();
+        } catch (StatusException | ValidationException e) {
+            throw new IllegalStateException("Failed to create LND invoice for processId=" + processId, e);
+        }
     }
 
     private BalanceSnapshot buildBalanceSnapshot(UUID processId, UUID ownerId) {

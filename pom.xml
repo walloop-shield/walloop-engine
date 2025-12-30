@@ -73,6 +73,11 @@
             <artifactId>spring-cloud-starter-kubernetes-fabric8</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.theborakompanioni</groupId>
+            <artifactId>lnd-grpc-client-starter</artifactId>
+            <version>0.16.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing-bridge-otel</artifactId>
         </dependency>

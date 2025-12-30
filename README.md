@@ -37,6 +37,37 @@ Core Engine Service que centraliza orquestracao de logicas, fluxos de transacao 
    mvn spring-boot:run
    ```
 
+## Lightning (LND gRPC)
+O engine gera invoices via gRPC direto no LND. A configuracao fica no `application.yml`
+e deve ser fornecida por variaveis de ambiente.
+
+### Local (arquivos)
+Para rodar localmente, use caminhos para os arquivos `tls.cert` e `admin.macaroon`:
+
+```
+LND_GRPC_HOST=localhost
+LND_GRPC_PORT=10009
+LND_GRPC_CERT_FILE=/caminho/para/tls.cert
+LND_GRPC_MACAROON_FILE=/caminho/para/admin.macaroon
+```
+
+### Producao (base64)
+Em producao, use base64 via secrets (ex: Fly secrets). Isso evita manter arquivos
+sensiveis no filesystem da aplicacao:
+
+```
+LND_GRPC_HOST=walloop-lightning-node.internal
+LND_GRPC_PORT=10009
+LND_GRPC_CERT_BASE64=...
+LND_GRPC_MACAROON_BASE64=...
+```
+
+Observacao: o macaroon com permissao admin da acesso total ao LND. Trate como segredo.
+
+### Teste rapido (local)
+Para validar o gRPC, rode a aplicacao e crie uma invoice pelo fluxo do engine.
+Se o LND estiver acessivel e o macaroon valido, a invoice sera criada sem erro.
+
 ## Flyway
 - As migrations vivem em `src/main/resources/db/migration`.
 - Migracao baseline `V1.0.0__init_customers.sql` cria o schema `engine`, habilita `pgcrypto` e cria a tabela `customers` com chave primaria UUID.
@@ -56,3 +87,4 @@ O `docker-compose.yml` inclui `vulpemventures/liquid` e `vulpemventures/bitcoin`
 
 ## Kubernetes
 Use `kubernetes/deployment.yaml` como base. O deployment espera um secret `walloop-db` com `username` e `password`, e endpoints para Postgres, RabbitMQ e, se necessario, Eureka. Ajuste as credenciais para refletir o database `walloop` e o schema `engine` (variaveis `SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA`, `SPRING_FLYWAY_DEFAULT_SCHEMA` e `SPRING_FLYWAY_SCHEMAS`).
+
