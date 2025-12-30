@@ -4,7 +4,7 @@ COPY pom.xml .
 COPY src ./src
 RUN mvn -B -DskipTests clean package
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 ENV JAVA_OPTS=""
 ARG JAR_FILE=target/*.jar

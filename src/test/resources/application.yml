@@ -30,6 +30,19 @@ sideshift:
   settle-coin: usdt
   settle-network: liquid
 
+boltz:
+  base-url: http://localhost:8089
+
+fixedfloat:
+  base-url: http://localhost:8090
+
 eureka:
   client:
     enabled: false
+
+org:
+  tbk:
+    lightning:
+      lnd:
+        grpc:
+          enabled: false

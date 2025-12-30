@@ -80,7 +80,7 @@ class SwapToLiquidStepTest {
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.WAITING);
-        verify(pairSimulationService).ensureSimulation(processId);
+        verify(pairSimulationService).ensureSimulation(processId, "btc", "btc");
         verify(withdrawRequestPublisher).publish(processId);
 
         ArgumentCaptor<SideShiftShiftEntity> captor = ArgumentCaptor.forClass(SideShiftShiftEntity.class);
@@ -107,7 +107,7 @@ class SwapToLiquidStepTest {
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.COMPLETED);
-        verify(pairSimulationService).ensureSimulation(processId);
+        verify(pairSimulationService).ensureSimulation(processId, "btc", "btc");
         verify(withdrawRequestPublisher, never()).publish(any());
         verify(sideShiftSwapService, never()).swapToLiquid(any(), any(), any(), any(), any(), any());
     }
@@ -130,7 +130,7 @@ class SwapToLiquidStepTest {
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.WAITING);
-        verify(pairSimulationService).ensureSimulation(processId);
+        verify(pairSimulationService).ensureSimulation(processId, "btc", "btc");
         verify(withdrawRequestPublisher, never()).publish(any());
         verify(shiftRepository, never()).save(any());
     }

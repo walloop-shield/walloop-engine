@@ -24,8 +24,6 @@ class SideShiftSwapServiceTest {
 
         SideShiftProperties properties = new SideShiftProperties();
         properties.setSecret("secret");
-        properties.setSettleCoin("btc");
-        properties.setSettleNetwork("liquid");
         properties.setAffiliateId("affiliate");
 
         ObjectMapper objectMapper = new ObjectMapper();
