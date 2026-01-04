@@ -22,8 +22,8 @@ class WithdrawRequestPublisherTest {
 
         ArgumentCaptor<WithdrawRequestMessage> messageCaptor = ArgumentCaptor.forClass(WithdrawRequestMessage.class);
         verify(rabbitTemplate).convertAndSend(
-                eq(WithdrawMessagingConfiguration.WITHDRAW_EXCHANGE),
-                eq(WithdrawMessagingConfiguration.WITHDRAW_ROUTING_KEY),
+                eq(CoreMessagingConfiguration.CORE_EXCHANGE),
+                eq(WithdrawMessagingConfiguration.BALANCE_PROCESS_ROUTING_KEY),
                 messageCaptor.capture()
         );
         WithdrawRequestMessage message = messageCaptor.getValue();

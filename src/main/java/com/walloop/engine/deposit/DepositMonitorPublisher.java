@@ -1,6 +1,7 @@
 package com.walloop.engine.deposit;
 
 import com.walloop.engine.dto.DepositMonitorMessage;
+import com.walloop.engine.messaging.CoreMessagingConfiguration;
 import com.walloop.engine.messaging.DepositMonitoringMessagingConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -13,6 +14,10 @@ public class DepositMonitorPublisher {
     private final RabbitTemplate rabbitTemplate;
 
     public void publish(DepositMonitorMessage message) {
-        rabbitTemplate.convertAndSend(DepositMonitoringMessagingConfiguration.DEPOSIT_MONITOR_QUEUE, message);
+        rabbitTemplate.convertAndSend(
+                CoreMessagingConfiguration.CORE_EXCHANGE,
+                DepositMonitoringMessagingConfiguration.MONITOR_WAITING_ROUTING_KEY,
+                message
+        );
     }
 }

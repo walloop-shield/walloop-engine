@@ -15,8 +15,8 @@ public class TransactionEngineConsumer {
     private final TransactionEngineService transactionEngineService;
 
     @RabbitListener(
-            queues = TransactionEngineMessagingConfiguration.TX_ENGINE_QUEUE,
-            containerFactory = TransactionEngineMessagingConfiguration.TX_ENGINE_LISTENER_CONTAINER_FACTORY
+            queues = TransactionEngineMessagingConfiguration.TRANSACTION_ENGINE_QUEUE,
+            containerFactory = TransactionEngineMessagingConfiguration.TRANSACTION_ENGINE_LISTENER_CONTAINER_FACTORY
     )
     public void onTransactionStart(TransactionStartMessage message) {
         log.info(

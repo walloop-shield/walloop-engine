@@ -32,8 +32,8 @@ public class DepositDetectedConsumer {
     private final WalloopEngineWorkflow workflow;
 
     @RabbitListener(
-            queues = DepositMonitoringMessagingConfiguration.DEPOSIT_DETECTED_QUEUE,
-            containerFactory = TransactionEngineMessagingConfiguration.TX_ENGINE_LISTENER_CONTAINER_FACTORY
+            queues = DepositMonitoringMessagingConfiguration.ENGINE_DEPOSIT_QUEUE,
+            containerFactory = TransactionEngineMessagingConfiguration.TRANSACTION_ENGINE_LISTENER_CONTAINER_FACTORY
     )
     public void onDepositDetected(DepositDetectedMessage message) {
         UUID processId = message.processId();

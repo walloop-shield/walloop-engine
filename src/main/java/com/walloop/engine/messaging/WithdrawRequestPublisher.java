@@ -21,8 +21,8 @@ public class WithdrawRequestPublisher {
     public void publish(UUID processId, String destination) {
         WithdrawRequestMessage message = new WithdrawRequestMessage(processId, destination);
         withdrawRabbitTemplate.convertAndSend(
-                WithdrawMessagingConfiguration.WITHDRAW_EXCHANGE,
-                WithdrawMessagingConfiguration.WITHDRAW_ROUTING_KEY,
+                CoreMessagingConfiguration.CORE_EXCHANGE,
+                WithdrawMessagingConfiguration.BALANCE_PROCESS_ROUTING_KEY,
                 message
         );
     }

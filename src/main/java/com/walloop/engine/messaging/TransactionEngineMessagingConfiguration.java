@@ -17,19 +17,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class TransactionEngineMessagingConfiguration {
 
-    public static final String TX_ENGINE_EXCHANGE = "transaction.engine.exchange";
-    public static final String TX_ENGINE_QUEUE = "transaction.engine.queue";
-    public static final String TX_ENGINE_ROUTING_KEY = "transaction.engine.start";
-    public static final String TX_ENGINE_LISTENER_CONTAINER_FACTORY = "transactionEngineListenerContainerFactory";
+    public static final String WALLOOP_ENGINE_EXCHANGE = "walloop.engine.exchange";
+    public static final String TRANSACTION_ENGINE_QUEUE = "transaction.engine.queue";
+    public static final String ENGINE_INITIALIZATION_ROUTING_KEY = "engine.initialization";
+    public static final String TRANSACTION_ENGINE_LISTENER_CONTAINER_FACTORY = "transactionEngineListenerContainerFactory";
 
     @Bean
     public DirectExchange transactionEngineExchange() {
-        return new DirectExchange(TX_ENGINE_EXCHANGE, true, false);
+        return new DirectExchange(WALLOOP_ENGINE_EXCHANGE, true, false);
     }
 
     @Bean
     public Queue transactionEngineQueue() {
-        return new Queue(TX_ENGINE_QUEUE, true);
+        return new Queue(TRANSACTION_ENGINE_QUEUE, true);
     }
 
     @Bean
@@ -39,10 +39,10 @@ public class TransactionEngineMessagingConfiguration {
     ) {
         return BindingBuilder.bind(transactionEngineQueue)
                 .to(transactionEngineExchange)
-                .with(TX_ENGINE_ROUTING_KEY);
+                .with(ENGINE_INITIALIZATION_ROUTING_KEY);
     }
 
-    @Bean(TX_ENGINE_LISTENER_CONTAINER_FACTORY)
+    @Bean(TRANSACTION_ENGINE_LISTENER_CONTAINER_FACTORY)
     public RabbitListenerContainerFactory<?> transactionEngineListenerContainerFactory(
             ConnectionFactory connectionFactory,
             ObjectMapper objectMapper,

@@ -33,8 +33,8 @@ public class WithdrawCompletedConsumer {
     private final WalloopEngineWorkflow workflow;
 
     @RabbitListener(
-            queues = WithdrawMessagingConfiguration.WITHDRAW_COMPLETED_QUEUE,
-            containerFactory = TransactionEngineMessagingConfiguration.TX_ENGINE_LISTENER_CONTAINER_FACTORY
+            queues = WithdrawMessagingConfiguration.ENGINE_WITHDRAW_QUEUE,
+            containerFactory = TransactionEngineMessagingConfiguration.TRANSACTION_ENGINE_LISTENER_CONTAINER_FACTORY
     )
     public void onWithdrawCompleted(WithdrawCompletedMessage message) {
         UUID processId = message.processId();
