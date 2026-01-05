@@ -10,6 +10,7 @@ primary_region = "gru"
   OTEL_TRACES_EXPORTER = "none"
   EUREKA_CLIENT_ENABLED = "true"
   EUREKA_CLIENT_SERVICE_URL = "http://testnet-walloop-edge.internal:8761/eureka"
+  WALLOOP_WALLET_BASE_URL = "http://walloop-wallet.internal:8080"
   SPRING_RABBITMQ_SSL_ENABLED = "true"
 
 [http_service]

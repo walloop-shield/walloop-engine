@@ -103,3 +103,7 @@ eureka:
     prefer-ip-address: true
     ip-address: ${FLY_PRIVATE_IP:127.0.0.1}
     instance-id: ${FLY_APP_NAME:walloop-engine}:${FLY_PRIVATE_IP:127.0.0.1}
+
+walloop:
+  wallet:
+    base-url: ${WALLOOP_WALLET_BASE_URL:http://localhost:8080}
