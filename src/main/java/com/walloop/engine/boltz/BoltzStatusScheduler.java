@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.ObjectProvider;
@@ -31,6 +32,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class BoltzStatusScheduler {
 
@@ -52,28 +54,6 @@ public class BoltzStatusScheduler {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ScheduledFuture<?> scheduled;
-
-    public BoltzStatusScheduler(
-            BoltzClient boltzClient,
-            LightningInvoiceRepository lightningInvoiceRepository,
-            WorkflowExecutionRepository workflowExecutionRepository,
-            WalletTransactionQueryService walletTransactionQueryService,
-            WorkflowOrchestrator orchestrator,
-            ObjectProvider<WalloopEngineWorkflow> workflowProvider,
-            ObjectMapper objectMapper,
-            LiquidRpcService liquidRpcService,
-            TaskScheduler taskScheduler
-    ) {
-        this.boltzClient = boltzClient;
-        this.lightningInvoiceRepository = lightningInvoiceRepository;
-        this.workflowExecutionRepository = workflowExecutionRepository;
-        this.walletTransactionQueryService = walletTransactionQueryService;
-        this.orchestrator = orchestrator;
-        this.workflowProvider = workflowProvider;
-        this.objectMapper = objectMapper;
-        this.liquidRpcService = liquidRpcService;
-        this.taskScheduler = taskScheduler;
-    }
 
     @PostConstruct
     void startIfPending() {

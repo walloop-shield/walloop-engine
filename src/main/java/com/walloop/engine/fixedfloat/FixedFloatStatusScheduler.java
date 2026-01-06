@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.ObjectProvider;
@@ -21,6 +22,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class FixedFloatStatusScheduler {
 
@@ -39,24 +41,6 @@ public class FixedFloatStatusScheduler {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ScheduledFuture<?> scheduled;
-
-    public FixedFloatStatusScheduler(
-            FixedFloatOrderRepository orderRepository,
-            FixedFloatOrderService orderService,
-            WorkflowExecutionRepository workflowExecutionRepository,
-            WalletTransactionQueryService walletTransactionQueryService,
-            WorkflowOrchestrator orchestrator,
-            ObjectProvider<WalloopEngineWorkflow> workflowProvider,
-            TaskScheduler taskScheduler
-    ) {
-        this.orderRepository = orderRepository;
-        this.orderService = orderService;
-        this.workflowExecutionRepository = workflowExecutionRepository;
-        this.walletTransactionQueryService = walletTransactionQueryService;
-        this.orchestrator = orchestrator;
-        this.workflowProvider = workflowProvider;
-        this.taskScheduler = taskScheduler;
-    }
 
     @PostConstruct
     void startIfPending() {

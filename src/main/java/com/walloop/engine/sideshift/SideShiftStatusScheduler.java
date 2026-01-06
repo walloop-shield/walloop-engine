@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.ObjectProvider;
@@ -22,6 +23,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class SideShiftStatusScheduler {
 
@@ -41,26 +43,6 @@ public class SideShiftStatusScheduler {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ScheduledFuture<?> scheduled;
-
-    public SideShiftStatusScheduler(
-            SideShiftShiftRepository shiftRepository,
-            SideShiftClient client,
-            SideShiftProperties properties,
-            WorkflowExecutionRepository workflowExecutionRepository,
-            WalletTransactionQueryService walletTransactionQueryService,
-            WorkflowOrchestrator orchestrator,
-            ObjectProvider<WalloopEngineWorkflow> workflowProvider,
-            TaskScheduler taskScheduler
-    ) {
-        this.shiftRepository = shiftRepository;
-        this.client = client;
-        this.properties = properties;
-        this.workflowExecutionRepository = workflowExecutionRepository;
-        this.walletTransactionQueryService = walletTransactionQueryService;
-        this.orchestrator = orchestrator;
-        this.workflowProvider = workflowProvider;
-        this.taskScheduler = taskScheduler;
-    }
 
     @PostConstruct
     void startIfPending() {
