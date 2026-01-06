@@ -13,15 +13,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class FixedFloatStatusScheduler {
 
@@ -30,17 +29,40 @@ public class FixedFloatStatusScheduler {
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final WalletTransactionQueryService walletTransactionQueryService;
     private final WorkflowOrchestrator orchestrator;
-    private final WalloopEngineWorkflow workflow;
+    private final ObjectProvider<WalloopEngineWorkflow> workflowProvider;
     private final TaskScheduler taskScheduler;
 
     @Value("${fixedfloat.status-cron:0 * * * * *}")
     private String statusCron;
+    @Value("${walloop.engine.scheduler.enabled:true}")
+    private boolean schedulerEnabled;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ScheduledFuture<?> scheduled;
 
+    public FixedFloatStatusScheduler(
+            FixedFloatOrderRepository orderRepository,
+            FixedFloatOrderService orderService,
+            WorkflowExecutionRepository workflowExecutionRepository,
+            WalletTransactionQueryService walletTransactionQueryService,
+            WorkflowOrchestrator orchestrator,
+            ObjectProvider<WalloopEngineWorkflow> workflowProvider,
+            TaskScheduler taskScheduler
+    ) {
+        this.orderRepository = orderRepository;
+        this.orderService = orderService;
+        this.workflowExecutionRepository = workflowExecutionRepository;
+        this.walletTransactionQueryService = walletTransactionQueryService;
+        this.orchestrator = orchestrator;
+        this.workflowProvider = workflowProvider;
+        this.taskScheduler = taskScheduler;
+    }
+
     @PostConstruct
     void startIfPending() {
+        if (!schedulerEnabled) {
+            return;
+        }
         if (orderRepository.existsByCompletedAtIsNull()) {
             ensurePolling();
         }
@@ -111,6 +133,7 @@ public class FixedFloatStatusScheduler {
         }
 
         WorkflowContext context = buildContext(processId, ownerId);
+        WalloopEngineWorkflow workflow = workflowProvider.getObject();
         orchestrator.resume(execution.getId(), workflow, context);
         log.info("Workflow resumed after FixedFloat completion processId={} executionId={}", processId, execution.getId());
     }

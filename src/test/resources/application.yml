@@ -46,3 +46,8 @@ org:
       lnd:
         grpc:
           enabled: false
+
+walloop:
+  engine:
+    scheduler:
+      enabled: false

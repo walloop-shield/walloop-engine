@@ -23,15 +23,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class BoltzStatusScheduler {
 
@@ -40,7 +39,7 @@ public class BoltzStatusScheduler {
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final WalletTransactionQueryService walletTransactionQueryService;
     private final WorkflowOrchestrator orchestrator;
-    private final WalloopEngineWorkflow workflow;
+    private final ObjectProvider<WalloopEngineWorkflow> workflowProvider;
     private final ObjectMapper objectMapper;
     private final LiquidRpcService liquidRpcService;
     private final TaskScheduler taskScheduler;
@@ -48,12 +47,39 @@ public class BoltzStatusScheduler {
     private String paidStatus;
     @Value("${boltz.status-cron:0 * * * * *}")
     private String statusCron;
+    @Value("${walloop.engine.scheduler.enabled:true}")
+    private boolean schedulerEnabled;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ScheduledFuture<?> scheduled;
 
+    public BoltzStatusScheduler(
+            BoltzClient boltzClient,
+            LightningInvoiceRepository lightningInvoiceRepository,
+            WorkflowExecutionRepository workflowExecutionRepository,
+            WalletTransactionQueryService walletTransactionQueryService,
+            WorkflowOrchestrator orchestrator,
+            ObjectProvider<WalloopEngineWorkflow> workflowProvider,
+            ObjectMapper objectMapper,
+            LiquidRpcService liquidRpcService,
+            TaskScheduler taskScheduler
+    ) {
+        this.boltzClient = boltzClient;
+        this.lightningInvoiceRepository = lightningInvoiceRepository;
+        this.workflowExecutionRepository = workflowExecutionRepository;
+        this.walletTransactionQueryService = walletTransactionQueryService;
+        this.orchestrator = orchestrator;
+        this.workflowProvider = workflowProvider;
+        this.objectMapper = objectMapper;
+        this.liquidRpcService = liquidRpcService;
+        this.taskScheduler = taskScheduler;
+    }
+
     @PostConstruct
     void startIfPending() {
+        if (!schedulerEnabled) {
+            return;
+        }
         if (lightningInvoiceRepository.existsByBoltzSwapIdIsNotNullAndStatusNot(LightningInvoiceStatus.PAID)) {
             ensurePolling();
         }
@@ -223,6 +249,7 @@ public class BoltzStatusScheduler {
         }
 
         WorkflowContext context = buildContext(processId, ownerId);
+        WalloopEngineWorkflow workflow = workflowProvider.getObject();
         orchestrator.resume(execution.getId(), workflow, context);
         log.info("Workflow resumed after Boltz payment processId={} executionId={}", processId, execution.getId());
     }

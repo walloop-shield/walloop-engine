@@ -21,6 +21,7 @@ class SideShiftSwapServiceTest {
         SideShiftClient client = Mockito.mock(SideShiftClient.class);
         SideShiftShiftRepository shiftRepository = Mockito.mock(SideShiftShiftRepository.class);
         LoginSessionRepository loginSessionRepository = Mockito.mock(LoginSessionRepository.class);
+        SideShiftStatusScheduler statusScheduler = Mockito.mock(SideShiftStatusScheduler.class);
 
         SideShiftProperties properties = new SideShiftProperties();
         properties.setSecret("secret");
@@ -31,6 +32,7 @@ class SideShiftSwapServiceTest {
                 client,
                 properties,
                 shiftRepository,
+                statusScheduler,
                 objectMapper,
                 loginSessionRepository
         );
@@ -60,5 +62,6 @@ class SideShiftSwapServiceTest {
         assertThat(saved.getUserIp()).isEqualTo("1.2.3.4");
         assertThat(saved.getCreatedAt()).isNotNull();
         assertThat(saved.getUpdatedAt()).isNotNull();
+        verify(statusScheduler).ensurePolling();
     }
 }

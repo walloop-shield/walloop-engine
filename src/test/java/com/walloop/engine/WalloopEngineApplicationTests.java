@@ -5,7 +5,7 @@ import org.lightningj.lnd.wrapper.SynchronousLndAPI;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-@SpringBootTest
+@SpringBootTest(properties = "walloop.wallet.base-url=http://localhost:8080")
 class WalloopEngineApplicationTests {
 
     @MockBean
