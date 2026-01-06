@@ -8,11 +8,16 @@ import com.walloop.engine.workflow.WorkflowExecutionRepository;
 import com.walloop.engine.workflow.WorkflowOrchestrator;
 import com.walloop.engine.workflow.walloop.WalloopEngineWorkflow;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
+import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -26,23 +31,69 @@ public class FixedFloatStatusScheduler {
     private final WalletTransactionQueryService walletTransactionQueryService;
     private final WorkflowOrchestrator orchestrator;
     private final WalloopEngineWorkflow workflow;
+    private final TaskScheduler taskScheduler;
 
-    @Scheduled(cron = "${fixedfloat.status-cron:0 * * * * *}")
-    public void pollOrders() {
-        List<FixedFloatOrderEntity> orders = orderRepository.findByCompletedAtIsNull();
-        if (orders.isEmpty()) {
+    @Value("${fixedfloat.status-cron:0 * * * * *}")
+    private String statusCron;
+
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    private ScheduledFuture<?> scheduled;
+
+    @PostConstruct
+    void startIfPending() {
+        if (orderRepository.existsByCompletedAtIsNull()) {
+            ensurePolling();
+        }
+    }
+
+    public void ensurePolling() {
+        if (scheduled != null && !scheduled.isCancelled()) {
             return;
         }
+        scheduled = taskScheduler.schedule(this::pollSafely, new CronTrigger(statusCron));
+    }
 
+    void pollSafely() {
+        if (!running.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            boolean hasPending = pollOrders();
+            if (!hasPending) {
+                stopPolling();
+            }
+        } finally {
+            running.set(false);
+        }
+    }
+
+    boolean pollOrders() {
+        List<FixedFloatOrderEntity> orders = orderRepository.findByCompletedAtIsNull();
+        if (orders.isEmpty()) {
+            return false;
+        }
+
+        boolean pendingLeft = false;
         for (FixedFloatOrderEntity order : orders) {
             try {
                 FixedFloatOrderEntity updated = orderService.refreshOrder(order);
                 if (updated.getCompletedAt() != null) {
                     resumeWorkflow(updated.getProcessId());
+                } else {
+                    pendingLeft = true;
                 }
             } catch (Exception e) {
                 log.warn("Failed to poll FixedFloat orderId={}", order.getOrderId(), e);
+                pendingLeft = true;
             }
+        }
+        return pendingLeft;
+    }
+
+    private void stopPolling() {
+        if (scheduled != null) {
+            scheduled.cancel(false);
+            scheduled = null;
         }
     }
 

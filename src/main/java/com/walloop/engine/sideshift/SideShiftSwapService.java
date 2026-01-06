@@ -19,6 +19,7 @@ public class SideShiftSwapService {
     private final SideShiftClient client;
     private final SideShiftProperties properties;
     private final SideShiftShiftRepository shiftRepository;
+    private final SideShiftStatusScheduler statusScheduler;
     private final ObjectMapper objectMapper;
     private final LoginSessionRepository loginSessionRepository;
 
@@ -67,6 +68,7 @@ public class SideShiftSwapService {
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
         shiftRepository.save(entity);
+        statusScheduler.ensurePolling();
     }
 
     private String resolveUserIp(String sessionToken) {

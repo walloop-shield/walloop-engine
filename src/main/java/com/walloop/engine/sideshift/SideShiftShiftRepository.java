@@ -9,4 +9,6 @@ public interface SideShiftShiftRepository extends JpaRepository<SideShiftShiftEn
     Optional<SideShiftShiftEntity> findFirstByProcessIdOrderByCreatedAtDesc(UUID processId);
 
     List<SideShiftShiftEntity> findByStatusIsNullOrStatusNot(SideShiftShiftStatus status);
+
+    boolean existsByStatusIsNullOrStatusNot(SideShiftShiftStatus status);
 }

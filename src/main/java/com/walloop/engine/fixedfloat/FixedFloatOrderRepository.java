@@ -9,4 +9,6 @@ public interface FixedFloatOrderRepository extends JpaRepository<FixedFloatOrder
     Optional<FixedFloatOrderEntity> findFirstByProcessIdOrderByCreatedAtDesc(UUID processId);
 
     List<FixedFloatOrderEntity> findByCompletedAtIsNull();
+
+    boolean existsByCompletedAtIsNull();
 }

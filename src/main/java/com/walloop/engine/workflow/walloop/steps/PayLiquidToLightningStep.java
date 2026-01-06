@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walloop.engine.boltz.BoltzClient;
 import com.walloop.engine.boltz.BoltzSubmarineRequest;
 import com.walloop.engine.boltz.BoltzSubmarineResponse;
+import com.walloop.engine.boltz.BoltzStatusScheduler;
 import com.walloop.engine.lightning.LightningInvoiceEntity;
 import com.walloop.engine.lightning.LightningInvoiceRepository;
 import com.walloop.engine.lightning.LightningInvoiceStatus;
@@ -34,6 +35,7 @@ public class PayLiquidToLightningStep implements WorkflowStep {
     private final LightningInvoiceRepository lightningInvoiceRepository;
     private final LiquidWalletRepository liquidWalletRepository;
     private final LiquidRpcService liquidRpcService;
+    private final BoltzStatusScheduler boltzStatusScheduler;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -77,6 +79,7 @@ public class PayLiquidToLightningStep implements WorkflowStep {
             invoiceEntity.setBoltzResponsePayload(toJson(response));
             invoiceEntity.setUpdatedAt(OffsetDateTime.now());
             lightningInvoiceRepository.save(invoiceEntity);
+            boltzStatusScheduler.ensurePolling();
         }
 
         if (invoiceEntity.getLiquidTxId() == null) {

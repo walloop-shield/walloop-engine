@@ -6,6 +6,11 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:walloop}}
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:walloop}}
     hikari:
+      minimum-idle: 0
+      idle-timeout: 30000
+      maximum-pool-size: 5
+      max-lifetime: 1200000
+      connection-timeout: 30000
       data-source-properties:
         sslmode: require
         sslrootcert: /app/certs/neon-root-ca.pem
@@ -66,6 +71,9 @@ logging:
     io.micrometer.registry.otlp: OFF
 
 management:
+  health:
+    db:
+      enabled: false
   endpoints:
     web:
       exposure:

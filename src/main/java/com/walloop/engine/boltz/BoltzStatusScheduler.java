@@ -14,16 +14,20 @@ import com.walloop.engine.workflow.WorkflowExecutionRepository;
 import com.walloop.engine.workflow.WorkflowOrchestrator;
 import com.walloop.engine.workflow.walloop.WalloopEngineWorkflow;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
+import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,17 +43,51 @@ public class BoltzStatusScheduler {
     private final WalloopEngineWorkflow workflow;
     private final ObjectMapper objectMapper;
     private final LiquidRpcService liquidRpcService;
+    private final TaskScheduler taskScheduler;
     @Value("${boltz.paid-status:invoice.paid}")
     private String paidStatus;
+    @Value("${boltz.status-cron:0 * * * * *}")
+    private String statusCron;
 
-    @Scheduled(cron = "${boltz.status-cron:0 * * * * *}")
-    public void pollBoltzStatuses() {
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    private ScheduledFuture<?> scheduled;
+
+    @PostConstruct
+    void startIfPending() {
+        if (lightningInvoiceRepository.existsByBoltzSwapIdIsNotNullAndStatusNot(LightningInvoiceStatus.PAID)) {
+            ensurePolling();
+        }
+    }
+
+    public void ensurePolling() {
+        if (scheduled != null && !scheduled.isCancelled()) {
+            return;
+        }
+        scheduled = taskScheduler.schedule(this::pollSafely, new CronTrigger(statusCron));
+    }
+
+    void pollSafely() {
+        if (!running.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            boolean hasPending = pollBoltzStatuses();
+            if (!hasPending) {
+                stopPolling();
+            }
+        } finally {
+            running.set(false);
+        }
+    }
+
+    boolean pollBoltzStatuses() {
         List<LightningInvoiceEntity> invoices = lightningInvoiceRepository
                 .findByBoltzSwapIdIsNotNullAndStatusNot(LightningInvoiceStatus.PAID);
         if (invoices.isEmpty()) {
-            return;
+            return false;
         }
 
+        boolean pendingLeft = false;
         for (LightningInvoiceEntity invoice : invoices) {
             try {
                 BoltzSwapStatusResponse response = boltzClient.getSwapStatus(invoice.getBoltzSwapId());
@@ -66,11 +104,23 @@ public class BoltzStatusScheduler {
                         resumeWorkflow(invoice.getProcessId());
                     } else {
                         lightningInvoiceRepository.save(invoice);
+                        pendingLeft = true;
                     }
+                } else {
+                    pendingLeft = true;
                 }
             } catch (Exception e) {
                 log.warn("Failed to poll Boltz status for swapId={}", invoice.getBoltzSwapId(), e);
+                pendingLeft = true;
             }
+        }
+        return pendingLeft;
+    }
+
+    private void stopPolling() {
+        if (scheduled != null) {
+            scheduled.cancel(false);
+            scheduled = null;
         }
     }
 

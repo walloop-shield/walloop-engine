@@ -2,6 +2,7 @@ package com.walloop.engine.workflow.walloop.steps;
 
 import com.walloop.engine.fixedfloat.FixedFloatOrderEntity;
 import com.walloop.engine.fixedfloat.FixedFloatOrderService;
+import com.walloop.engine.fixedfloat.FixedFloatStatusScheduler;
 import com.walloop.engine.lightning.LightningInvoiceEntity;
 import com.walloop.engine.lightning.LightningInvoiceRepository;
 import com.walloop.engine.workflow.StepResult;
@@ -20,6 +21,7 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
 
     private final LightningInvoiceRepository lightningInvoiceRepository;
     private final FixedFloatOrderService fixedFloatOrderService;
+    private final FixedFloatStatusScheduler fixedFloatStatusScheduler;
 
     @Override
     public String key() {
@@ -45,6 +47,7 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
                 destinationAddress,
                 paidAmountSats
         );
+        fixedFloatStatusScheduler.ensurePolling();
 
         if (fixedFloatOrderService.isCompleted(order)) {
             log.info("FixedFloat order completed processId={} orderId={}", processId, order.getOrderId());

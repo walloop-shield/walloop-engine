@@ -8,4 +8,6 @@ public interface LightningInvoiceRepository extends JpaRepository<LightningInvoi
     Optional<LightningInvoiceEntity> findFirstByProcessIdOrderByCreatedAtDesc(UUID processId);
 
     java.util.List<LightningInvoiceEntity> findByBoltzSwapIdIsNotNullAndStatusNot(LightningInvoiceStatus status);
+
+    boolean existsByBoltzSwapIdIsNotNullAndStatusNot(LightningInvoiceStatus status);
 }
