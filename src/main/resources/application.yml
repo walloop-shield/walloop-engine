@@ -92,7 +92,7 @@ org:
       lnd:
         grpc:
           enabled: true
-          host: ${LND_GRPC_HOST:walloop-lightning-node.internal}
+          host: ${LND_GRPC_HOST:[fdaa:3a:c627:a7b:5d3:96a9:d10e:2]}
           port: ${LND_GRPC_PORT:10009}
           macaroon-base64: ${LND_GRPC_MACAROON_BASE64:}
           cert-base64: ${LND_GRPC_CERT_BASE64:}
