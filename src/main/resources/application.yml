@@ -115,3 +115,13 @@ eureka:
 walloop:
   wallet:
     base-url: ${WALLOOP_WALLET_BASE_URL:http://localhost:8080}
+  lightning:
+    invoice-expiry-seconds: 7200
+    inbound-target-sats: 1000000
+    inbound-check-enabled: true
+    inbound-retry-delay: PT10M
+    lsp:
+      provider: amboss-magma
+      node-pubkey: 030f0b8e9b8b047df76db393dcd9278994020dda10cc909ac294aa4aca778f25b3
+      base-url: ${WALLOOP_LIGHTNING_LSP_BASE_URL:https://api.amboss.space}
+      api-key: ${WALLOOP_LIGHTNING_LSP_API_KEY:}

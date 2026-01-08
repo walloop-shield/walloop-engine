@@ -1,5 +1,7 @@
 package com.walloop.engine.workflow;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,5 +12,9 @@ public interface WorkflowExecutionRepository {
     Optional<WorkflowExecution> findById(UUID executionId);
 
     Optional<WorkflowExecution> findByTransactionId(UUID transactionId);
+
+    boolean existsPendingRetries();
+
+    List<WorkflowExecution> findRetriesDue(Instant now);
 }
 

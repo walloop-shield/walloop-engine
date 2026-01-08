@@ -3,7 +3,10 @@ package com.walloop.engine.workflow.persistence;
 import com.walloop.engine.workflow.StepExecution;
 import com.walloop.engine.workflow.WorkflowExecution;
 import com.walloop.engine.workflow.WorkflowExecutionRepository;
+import com.walloop.engine.workflow.WorkflowStatus;
+import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,8 @@ public class PostgresWorkflowExecutionRepository implements WorkflowExecutionRep
         entity.setOwnerId(execution.getOwnerId());
         entity.setStatus(execution.getStatus());
         entity.setNextStepIndex(execution.getNextStepIndex());
+        entity.setNextRetryAt(execution.getNextRetryAt());
+        entity.setRetryCount(execution.getRetryCount());
         entity.setUpdatedAt(execution.getUpdatedAt());
 
         entity.getSteps().clear();
@@ -63,6 +68,20 @@ public class PostgresWorkflowExecutionRepository implements WorkflowExecutionRep
         return jpaRepository.findByTransactionId(transactionId).map(this::toDomain);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsPendingRetries() {
+        return jpaRepository.existsByStatusAndNextRetryAtIsNotNull(WorkflowStatus.WAITING);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WorkflowExecution> findRetriesDue(Instant now) {
+        return jpaRepository.findByStatusAndNextRetryAtLessThanEqual(WorkflowStatus.WAITING, now).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     private WorkflowExecution toDomain(WorkflowExecutionEntity entity) {
         WorkflowExecution restored = WorkflowExecution.restore(
                 entity.getId(),
@@ -71,6 +90,8 @@ public class PostgresWorkflowExecutionRepository implements WorkflowExecutionRep
                 entity.getOwnerId(),
                 entity.getStatus(),
                 entity.getNextStepIndex(),
+                entity.getNextRetryAt(),
+                entity.getRetryCount(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

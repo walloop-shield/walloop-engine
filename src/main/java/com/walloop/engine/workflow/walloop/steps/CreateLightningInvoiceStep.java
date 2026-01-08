@@ -1,10 +1,12 @@
 package com.walloop.engine.workflow.walloop.steps;
 
+import com.walloop.engine.lightning.LightningInboundLiquidityService;
 import com.walloop.engine.lightning.LightningInvoiceService;
 import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.WorkflowContext;
 import com.walloop.engine.workflow.WorkflowStep;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
+import java.time.Duration;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class CreateLightningInvoiceStep implements WorkflowStep {
 
     private final LightningInvoiceService lightningInvoiceService;
+    private final LightningInboundLiquidityService inboundLiquidityService;
 
     @Override
     public String key() {
@@ -26,6 +29,14 @@ public class CreateLightningInvoiceStep implements WorkflowStep {
     public StepResult execute(WorkflowContext context) {
         UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
         UUID ownerId = context.require(WalloopWorkflowContextKeys.OWNER_ID, UUID.class);
+
+        LightningInboundLiquidityService.InboundLiquidityCheck inboundCheck =
+                inboundLiquidityService.ensureInboundLiquidity(processId);
+        if (!inboundCheck.ready()) {
+            Duration retryAfter = inboundCheck.retryAfter() != null ? inboundCheck.retryAfter() : Duration.ofMinutes(5);
+            String detail = inboundCheck.detail() != null ? inboundCheck.detail() : "Inbound liquidity pending";
+            return StepResult.retry(detail, retryAfter);
+        }
 
         String invoice = lightningInvoiceService.createOrGetInvoice(processId, ownerId);
         context.put(WalloopWorkflowContextKeys.LIGHTNING_INVOICE, invoice);

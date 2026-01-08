@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
 
     private final WorkflowExecutionRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public WorkflowExecution start(WorkflowDefinition definition, WorkflowContext context, WorkflowStartMetadata metadata) {
@@ -42,6 +44,7 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
         }
 
         execution.setStatus(WorkflowStatus.RUNNING);
+        execution.clearRetry();
         repository.save(execution);
 
         while (execution.getNextStepIndex() < definition.steps().size()) {
@@ -52,14 +55,23 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
 
                 if (result.status() == StepStatus.COMPLETED) {
                     execution.setNextStepIndex(execution.getNextStepIndex() + 1);
+                    execution.clearRetry();
                     repository.save(execution);
                     continue;
                 }
 
                 if (result.status() == StepStatus.WAITING || result.status() == StepStatus.RETRY) {
                     execution.setStatus(WorkflowStatus.WAITING);
+                    if (result.status() == StepStatus.RETRY) {
+                        execution.scheduleRetry(result.retryAfter());
+                    } else {
+                        execution.clearRetry();
+                    }
                     repository.save(execution);
                     log.info("Workflow {} waiting at step {}: {}", execution.getId(), step.key(), result.detail());
+                    if (result.status() == StepStatus.RETRY) {
+                        eventPublisher.publishEvent(new WorkflowRetryScheduledEvent(execution.getId()));
+                    }
                     return execution;
                 }
 

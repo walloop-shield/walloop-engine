@@ -36,6 +36,11 @@ public class WorkflowExecutionEntity {
     @Column(nullable = false)
     private int nextStepIndex;
 
+    private Instant nextRetryAt;
+
+    @Column(nullable = false)
+    private int retryCount;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -96,6 +101,22 @@ public class WorkflowExecutionEntity {
 
     public void setNextStepIndex(int nextStepIndex) {
         this.nextStepIndex = nextStepIndex;
+    }
+
+    public Instant getNextRetryAt() {
+        return nextRetryAt;
+    }
+
+    public void setNextRetryAt(Instant nextRetryAt) {
+        this.nextRetryAt = nextRetryAt;
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
     }
 
     public Instant getCreatedAt() {

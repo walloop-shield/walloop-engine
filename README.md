@@ -68,6 +68,21 @@ Observacao: o macaroon com permissao admin da acesso total ao LND. Trate como se
 Para validar o gRPC, rode a aplicacao e crie uma invoice pelo fluxo do engine.
 Se o LND estiver acessivel e o macaroon valido, a invoice sera criada sem erro.
 
+## Lightning / LSP (Amboss Magma)
+O engine pode contratar liquidez inbound via LSP usando a API GraphQL da Amboss.
+O gatilho acontece no step `create_lightning_invoice`: se a liquidez inbound
+ficar abaixo do alvo e nao houver pedido pendente, o engine cria uma ordem no LSP
+e agenda retry.
+
+Configuracoes principais (application.yml):
+- `walloop.lightning.inbound-target-sats`: alvo global de inbound.
+- `walloop.lightning.inbound-check-enabled`: habilita o check de inbound antes da invoice.
+- `walloop.lightning.lsp.base-url`: base URL da API GraphQL.
+- `walloop.lightning.lsp.api-key`: API key (Bearer).
+- `walloop.lightning.lsp.node-pubkey`: pubkey do node (override).
+
+Observacao: o endpoint GraphQL e fixo no codigo (`/graphql`).
+
 ## Flyway
 - As migrations vivem em `src/main/resources/db/migration`.
 - Migracao baseline `V1.0.0__init_customers.sql` cria o schema `engine`, habilita `pgcrypto` e cria a tabela `customers` com chave primaria UUID.

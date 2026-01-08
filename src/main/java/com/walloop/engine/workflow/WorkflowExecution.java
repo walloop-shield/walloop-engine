@@ -1,6 +1,7 @@
 package com.walloop.engine.workflow;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +14,8 @@ public class WorkflowExecution {
     private UUID ownerId;
     private WorkflowStatus status;
     private int nextStepIndex;
+    private Instant nextRetryAt;
+    private int retryCount;
     private final List<StepExecution> history;
     private Instant createdAt;
     private Instant updatedAt;
@@ -24,6 +27,8 @@ public class WorkflowExecution {
         this.ownerId = null;
         this.status = WorkflowStatus.RUNNING;
         this.nextStepIndex = 0;
+        this.nextRetryAt = null;
+        this.retryCount = 0;
         this.history = new ArrayList<>();
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
@@ -36,6 +41,8 @@ public class WorkflowExecution {
             UUID ownerId,
             WorkflowStatus status,
             int nextStepIndex,
+            Instant nextRetryAt,
+            int retryCount,
             Instant createdAt,
             Instant updatedAt
     ) {
@@ -44,6 +51,8 @@ public class WorkflowExecution {
         execution.ownerId = ownerId;
         execution.status = status;
         execution.nextStepIndex = nextStepIndex;
+        execution.nextRetryAt = nextRetryAt;
+        execution.retryCount = retryCount;
         execution.createdAt = createdAt;
         execution.updatedAt = updatedAt;
         execution.history.clear();
@@ -92,6 +101,30 @@ public class WorkflowExecution {
     public void setNextStepIndex(int nextStepIndex) {
         this.nextStepIndex = nextStepIndex;
         touch();
+    }
+
+    public Instant getNextRetryAt() {
+        return nextRetryAt;
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public void scheduleRetry(Duration delay) {
+        if (delay == null) {
+            throw new IllegalArgumentException("retry delay is required");
+        }
+        this.nextRetryAt = Instant.now().plus(delay);
+        this.retryCount += 1;
+        touch();
+    }
+
+    public void clearRetry() {
+        if (this.nextRetryAt != null) {
+            this.nextRetryAt = null;
+            touch();
+        }
     }
 
     public List<StepExecution> getHistory() {

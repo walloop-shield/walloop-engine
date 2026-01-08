@@ -15,6 +15,7 @@ import org.lightningj.lnd.wrapper.StatusException;
 import org.lightningj.lnd.wrapper.ValidationException;
 import org.lightningj.lnd.wrapper.message.AddInvoiceResponse;
 import org.lightningj.lnd.wrapper.message.Invoice;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,6 +27,9 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     private final LiquidWalletRepository liquidWalletRepository;
     private final LiquidRpcService liquidRpcService;
     private final SideShiftPairSimulationRepository pairSimulationRepository;
+
+    @Value("${walloop.lightning.invoice-expiry-seconds:7200}")
+    private long invoiceExpirySeconds;
 
     @Override
     public String createOrGetInvoice(UUID processId, UUID ownerId) {
@@ -61,6 +65,7 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
             Invoice invoice = new Invoice();
             invoice.setMemo("walloop:" + processId);
             invoice.setValueMsat(amountMsats);
+            invoice.setExpiry(invoiceExpirySeconds);
             AddInvoiceResponse response = lndApi.addInvoice(invoice);
             return response.getPaymentRequest();
         } catch (StatusException | ValidationException e) {
