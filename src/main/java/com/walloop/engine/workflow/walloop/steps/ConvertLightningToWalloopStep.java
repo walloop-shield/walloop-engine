@@ -1,6 +1,7 @@
 package com.walloop.engine.workflow.walloop.steps;
 
 import com.walloop.engine.fixedfloat.FixedFloatOrderEntity;
+import com.walloop.engine.fixedfloat.FixedFloatOrderRepository;
 import com.walloop.engine.fixedfloat.FixedFloatOrderService;
 import com.walloop.engine.fixedfloat.FixedFloatStatusScheduler;
 import com.walloop.engine.lightning.LightningInvoiceEntity;
@@ -9,9 +10,15 @@ import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.WorkflowContext;
 import com.walloop.engine.workflow.WorkflowStep;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lightningj.lnd.wrapper.SynchronousLndAPI;
+import org.lightningj.lnd.wrapper.StatusException;
+import org.lightningj.lnd.wrapper.ValidationException;
+import org.lightningj.lnd.wrapper.message.SendRequest;
+import org.lightningj.lnd.wrapper.message.SendResponse;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,7 +28,12 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
 
     private final LightningInvoiceRepository lightningInvoiceRepository;
     private final FixedFloatOrderService fixedFloatOrderService;
+    private final FixedFloatOrderRepository fixedFloatOrderRepository;
     private final FixedFloatStatusScheduler fixedFloatStatusScheduler;
+    private final SynchronousLndAPI lndApi;
+
+    private static final String PAYMENT_STATUS_PAID = "PAID";
+    private static final String PAYMENT_STATUS_FAILED = "FAILED";
 
     @Override
     public String key() {
@@ -47,6 +59,40 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
                 destinationAddress,
                 paidAmountSats
         );
+
+        if (!PAYMENT_STATUS_PAID.equals(order.getPaymentStatus())) {
+            String paymentRequest = order.getPaymentRequest();
+            if (paymentRequest == null || paymentRequest.isBlank()) {
+                throw new IllegalStateException("FixedFloat payment request not available for processId=" + processId);
+            }
+            try {
+                SendRequest request = new SendRequest();
+                request.setPaymentRequest(paymentRequest);
+                SendResponse response = lndApi.sendPaymentSync(request);
+                String paymentError = response.getPaymentError();
+                order.setPaymentAttemptedAt(OffsetDateTime.now());
+                if (paymentError != null && !paymentError.isBlank()) {
+                    order.setPaymentStatus(PAYMENT_STATUS_FAILED);
+                    order.setPaymentError(paymentError);
+                    order.setUpdatedAt(OffsetDateTime.now());
+                    fixedFloatOrderRepository.save(order);
+                    return StepResult.failed("FixedFloat payment failed: " + paymentError);
+                }
+                order.setPaymentStatus(PAYMENT_STATUS_PAID);
+                order.setPaymentPreimage(toHex(response.getPaymentPreimage()));
+                order.setPaymentHash(toHex(response.getPaymentHash()));
+                order.setPaymentCompletedAt(OffsetDateTime.now());
+                order.setUpdatedAt(OffsetDateTime.now());
+                fixedFloatOrderRepository.save(order);
+            } catch (StatusException | ValidationException e) {
+                order.setPaymentStatus(PAYMENT_STATUS_FAILED);
+                order.setPaymentError(e.getMessage());
+                order.setUpdatedAt(OffsetDateTime.now());
+                fixedFloatOrderRepository.save(order);
+                return StepResult.failed("FixedFloat payment failed for processId=" + processId);
+            }
+        }
+
         fixedFloatStatusScheduler.ensurePolling();
 
         if (fixedFloatOrderService.isCompleted(order)) {
@@ -56,6 +102,17 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
 
         log.info("FixedFloat order pending processId={} orderId={}", processId, order.getOrderId());
         return StepResult.waiting("Awaiting FixedFloat confirmation");
+    }
+
+    private String toHex(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder(bytes.length * 2);
+        for (byte value : bytes) {
+            builder.append(String.format("%02x", value));
+        }
+        return builder.toString();
     }
 }
 

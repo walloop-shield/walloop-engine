@@ -46,6 +46,27 @@ public class FixedFloatOrderEntity {
     private Integer confirmations;
 
     @Lob
+    private String paymentRequest;
+
+    @Column
+    private String paymentStatus;
+
+    @Lob
+    private String paymentError;
+
+    @Column
+    private String paymentPreimage;
+
+    @Column
+    private String paymentHash;
+
+    @Column
+    private OffsetDateTime paymentAttemptedAt;
+
+    @Column
+    private OffsetDateTime paymentCompletedAt;
+
+    @Lob
     @Column(nullable = false)
     private String requestPayload;
 
@@ -139,6 +160,62 @@ public class FixedFloatOrderEntity {
 
     public void setConfirmations(Integer confirmations) {
         this.confirmations = confirmations;
+    }
+
+    public String getPaymentRequest() {
+        return paymentRequest;
+    }
+
+    public void setPaymentRequest(String paymentRequest) {
+        this.paymentRequest = paymentRequest;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getPaymentError() {
+        return paymentError;
+    }
+
+    public void setPaymentError(String paymentError) {
+        this.paymentError = paymentError;
+    }
+
+    public String getPaymentPreimage() {
+        return paymentPreimage;
+    }
+
+    public void setPaymentPreimage(String paymentPreimage) {
+        this.paymentPreimage = paymentPreimage;
+    }
+
+    public String getPaymentHash() {
+        return paymentHash;
+    }
+
+    public void setPaymentHash(String paymentHash) {
+        this.paymentHash = paymentHash;
+    }
+
+    public OffsetDateTime getPaymentAttemptedAt() {
+        return paymentAttemptedAt;
+    }
+
+    public void setPaymentAttemptedAt(OffsetDateTime paymentAttemptedAt) {
+        this.paymentAttemptedAt = paymentAttemptedAt;
+    }
+
+    public OffsetDateTime getPaymentCompletedAt() {
+        return paymentCompletedAt;
+    }
+
+    public void setPaymentCompletedAt(OffsetDateTime paymentCompletedAt) {
+        this.paymentCompletedAt = paymentCompletedAt;
     }
 
     public String getRequestPayload() {

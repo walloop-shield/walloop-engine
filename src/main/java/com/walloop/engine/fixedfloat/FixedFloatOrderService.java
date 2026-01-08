@@ -75,6 +75,7 @@ public class FixedFloatOrderService {
         entity.setAmount(amountBtc.stripTrailingZeros().toPlainString());
         entity.setToAddress(toAddress);
         entity.setConfirmations(asInteger(nested(response.data(), "from", "tx", "confirmations")));
+        entity.setPaymentRequest(extractPaymentRequest(response.data()));
         entity.setRequestPayload(payload);
         entity.setResponsePayload(toJson(response));
         entity.setCreatedAt(OffsetDateTime.now());
@@ -184,6 +185,30 @@ public class FixedFloatOrderService {
 
     private boolean isSuccess(FixedFloatResponse<?> response) {
         return response != null && "0".equals(response.code());
+    }
+
+    private String extractPaymentRequest(Map<String, Object> data) {
+        String invoice = asString(nested(data, "invoice"));
+        if (invoice != null && !invoice.isBlank()) {
+            return invoice;
+        }
+        invoice = asString(nested(data, "payin"));
+        if (invoice != null && !invoice.isBlank()) {
+            return invoice;
+        }
+        invoice = asString(nested(data, "payin", "invoice"));
+        if (invoice != null && !invoice.isBlank()) {
+            return invoice;
+        }
+        invoice = asString(nested(data, "payinInvoice"));
+        if (invoice != null && !invoice.isBlank()) {
+            return invoice;
+        }
+        invoice = asString(nested(data, "from", "address"));
+        if (invoice != null && !invoice.isBlank()) {
+            return invoice;
+        }
+        return asString(nested(data, "from", "addressAlt"));
     }
 
     private Object nested(Map<String, Object> data, String... keys) {
