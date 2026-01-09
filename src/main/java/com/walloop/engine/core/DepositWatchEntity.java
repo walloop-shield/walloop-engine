@@ -16,6 +16,9 @@ public class DepositWatchEntity {
     @Column(name = "process_id")
     private UUID processId;
 
+    @Column(name = "network")
+    private String network;
+
     @Column(name = "lastBalance")
     private String lastBalance;
 
@@ -25,6 +28,14 @@ public class DepositWatchEntity {
 
     public void setProcessId(UUID processId) {
         this.processId = processId;
+    }
+
+    public String getNetwork() {
+        return network;
+    }
+
+    public void setNetwork(String network) {
+        this.network = network;
     }
 
     public String getLastBalance() {

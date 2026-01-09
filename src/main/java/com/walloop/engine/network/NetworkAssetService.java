@@ -32,6 +32,22 @@ public class NetworkAssetService {
         return Optional.empty();
     }
 
+    public Optional<NetworkAssetResponse> findAsset(String network) {
+        if (network == null || network.isBlank()) {
+            return Optional.empty();
+        }
+        String normalized = normalize(network);
+        for (NetworkAssetResponse asset : fetchNetworks()) {
+            if (asset == null) {
+                continue;
+            }
+            if (matches(normalized, asset)) {
+                return Optional.of(asset);
+            }
+        }
+        return Optional.empty();
+    }
+
     public String requireMainAsset(String network) {
         return findMainAsset(network)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown network: " + network));

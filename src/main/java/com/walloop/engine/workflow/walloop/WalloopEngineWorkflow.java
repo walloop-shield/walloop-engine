@@ -36,13 +36,13 @@ public class WalloopEngineWorkflow implements WorkflowDefinition {
     public List<WorkflowStep> steps() {
         return List.of(
                 awaitWalloopDepositStep,
-                calculateFeesStep,
                 createLiquidWalletStep,
                 createLightningInvoiceStep,
                 swapToLiquidStep,
                 payLiquidToLightningStep,
                 convertLightningToWalloopStep,
-                returnToMainWalletStep
+                returnToMainWalletStep,
+                calculateFeesStep
         );
     }
 }
