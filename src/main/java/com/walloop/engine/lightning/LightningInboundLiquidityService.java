@@ -50,25 +50,25 @@ public class LightningInboundLiquidityService {
 
     public InboundLiquidityCheck ensureInboundLiquidity(UUID processId) {
         if (!inboundCheckEnabled) {
-            return InboundLiquidityCheck.ready();
+            return InboundLiquidityCheck.readyCheck();
         }
 
         long inboundSats = resolveInboundSats();
         if (inboundSats >= inboundTargetSats) {
-            return InboundLiquidityCheck.ready();
+            return InboundLiquidityCheck.readyCheck();
         }
 
         Optional<LightningInboundLiquidityRequestEntity> pending = requestRepository
                 .findFirstByStatusInOrderByCreatedAtDesc(PENDING_STATUSES);
         if (pending.isPresent()) {
-            return InboundLiquidityCheck.retry(
+            return InboundLiquidityCheck.retryCheck(
                     "Inbound liquidity pending",
                     retryDelay
             );
         }
 
         if (lspBaseUrl == null || lspBaseUrl.isBlank() || lspApiKey == null || lspApiKey.isBlank()) {
-            return InboundLiquidityCheck.retry(
+            return InboundLiquidityCheck.retryCheck(
                     "Inbound liquidity below target and LSP not configured",
                     retryDelay
             );
@@ -105,7 +105,7 @@ public class LightningInboundLiquidityService {
 
         entity.setUpdatedAt(OffsetDateTime.now());
         requestRepository.save(entity);
-        return InboundLiquidityCheck.retry("Inbound liquidity requested", retryDelay);
+        return InboundLiquidityCheck.retryCheck("Inbound liquidity requested", retryDelay);
     }
 
     private long resolveInboundSats() {
@@ -134,11 +134,11 @@ public class LightningInboundLiquidityService {
     }
 
     public record InboundLiquidityCheck(boolean ready, String detail, Duration retryAfter) {
-        static InboundLiquidityCheck ready() {
+        public static InboundLiquidityCheck readyCheck() {
             return new InboundLiquidityCheck(true, null, null);
         }
 
-        static InboundLiquidityCheck retry(String detail, Duration retryAfter) {
+        public static InboundLiquidityCheck retryCheck(String detail, Duration retryAfter) {
             return new InboundLiquidityCheck(false, detail, retryAfter);
         }
     }

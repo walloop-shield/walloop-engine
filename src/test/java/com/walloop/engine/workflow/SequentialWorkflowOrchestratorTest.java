@@ -2,19 +2,22 @@ package com.walloop.engine.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
+import org.mockito.Mockito;
 
 class SequentialWorkflowOrchestratorTest {
 
     @Test
     void pausesOnWaitingStepAndResumesToCompletion() {
         TestWorkflowExecutionRepository repository = new TestWorkflowExecutionRepository();
-        SequentialWorkflowOrchestrator orchestrator = new SequentialWorkflowOrchestrator(repository);
+        ApplicationEventPublisher eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        SequentialWorkflowOrchestrator orchestrator = new SequentialWorkflowOrchestrator(repository, eventPublisher);
 
         WorkflowDefinition definition = new WorkflowDefinition() {
             @Override
@@ -86,6 +89,20 @@ class SequentialWorkflowOrchestratorTest {
             return storage.values().stream()
                     .filter(execution -> transactionId.equals(execution.getTransactionId()))
                     .findFirst();
+        }
+
+        @Override
+        public boolean existsPendingRetries() {
+            return storage.values().stream()
+                    .anyMatch(execution -> execution.getNextRetryAt() != null);
+        }
+
+        @Override
+        public List<WorkflowExecution> findRetriesDue(java.time.Instant now) {
+            return storage.values().stream()
+                    .filter(execution -> execution.getNextRetryAt() != null)
+                    .filter(execution -> !execution.getNextRetryAt().isAfter(now))
+                    .toList();
         }
     }
 }

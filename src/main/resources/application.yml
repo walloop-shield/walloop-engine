@@ -126,13 +126,14 @@ walloop:
       base-url: ${WALLOOP_LIGHTNING_LSP_BASE_URL:https://api.amboss.space}
       api-key: ${WALLOOP_LIGHTNING_LSP_API_KEY:}
   fee:
-    platform-percent: ${WALLOOP_FEE_PLATFORM_PERCENT:0.5}
-    sideshift-percent: ${WALLOOP_FEE_SIDESHIFT_PERCENT:0.4}
-    boltz-percent: ${WALLOOP_FEE_BOLTZ_PERCENT:0.3}
-    fixedfloat-percent: ${WALLOOP_FEE_FIXEDFLOAT_PERCENT:0.6}
-    onchain-chains: ${WALLOOP_FEE_ONCHAIN_CHAINS:BTC,L-BTC,LBTC,LIQUID}
+    platform-percent: 3
+    sideshift-percent: 0.5
+    boltz-percent: 0.1
+    fixedfloat-percent: 0.5
+    onchain-chains: BTC,L-BTC,LBTC,LIQUID
     rate-provider:
-      type: ${WALLOOP_FEE_RATE_PROVIDER:none}
-    coingecko:
-      base-url: ${WALLOOP_FEE_COINGECKO_BASE_URL:https://api.coingecko.com}
-      api-key: ${WALLOOP_FEE_COINGECKO_API_KEY:}
+      type: coincap
+    coincap:
+      base-url: https://api.coincap.io
+      api-key: ${WALLOOP_FEE_COINCAP_API_KEY:}
+      usd-brl-rate-id: brazilian-real

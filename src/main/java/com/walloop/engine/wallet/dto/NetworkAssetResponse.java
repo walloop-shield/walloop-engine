@@ -7,7 +7,7 @@ import java.util.List;
 public record NetworkAssetResponse(
         String network,
         String mainAsset,
-        String coingeckoId,
+        String priceId,
         Integer decimals,
         List<String> aliases
 ) {

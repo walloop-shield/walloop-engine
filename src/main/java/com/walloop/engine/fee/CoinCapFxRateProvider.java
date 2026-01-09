@@ -15,64 +15,36 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
-@ConditionalOnProperty(prefix = "walloop.fee.rate-provider", name = "type", havingValue = "coingecko")
+@ConditionalOnProperty(prefix = "walloop.fee.rate-provider", name = "type", havingValue = "coincap")
 @RequiredArgsConstructor
 @Slf4j
-public class CoinGeckoFxRateProvider implements FxRateProvider {
+public class CoinCapFxRateProvider implements FxRateProvider {
 
-    private static final String ENDPOINT = "/api/v3/simple/price";
+    private static final String ASSET_ENDPOINT = "/v2/assets/{id}";
+    private static final String RATE_ENDPOINT = "/v2/rates/{id}";
 
     private final ObjectMapper objectMapper;
 
-    @Value("${walloop.fee.coingecko.base-url:https://api.coingecko.com}")
+    @Value("${walloop.fee.coincap.base-url:https://api.coincap.io}")
     private String baseUrl;
 
-    @Value("${walloop.fee.coingecko.api-key:}")
+    @Value("${walloop.fee.coincap.api-key:}")
     private String apiKey;
+
+    @Value("${walloop.fee.coincap.usd-brl-rate-id:brazilian-real}")
+    private String usdBrlRateId;
 
     @Override
     public Optional<FxRateSnapshot> fetch() {
         try {
-            RestClient client = RestClient.builder()
-                    .baseUrl(baseUrl)
-                    .build();
-            String response = client.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path(ENDPOINT)
-                            .queryParam("ids", "bitcoin")
-                            .queryParam("vs_currencies", "usd,brl")
-                            .build())
-                    .accept(MediaType.APPLICATION_JSON)
-                    .headers(headers -> {
-                        if (apiKey != null && !apiKey.isBlank()) {
-                            headers.add("x-cg-pro-api-key", apiKey);
-                        }
-                    })
-                    .retrieve()
-                    .body(String.class);
-
-            if (response == null || response.isBlank()) {
+            Optional<BigDecimal> btcUsd = fetchAssetUsd("bitcoin");
+            if (btcUsd.isEmpty()) {
                 return Optional.empty();
             }
-
-            Map<String, Object> payload = objectMapper.readValue(response, new TypeReference<>() {});
-            Object bitcoin = payload.get("bitcoin");
-            if (!(bitcoin instanceof Map<?, ?> btcMap)) {
-                return Optional.empty();
-            }
-
-            BigDecimal btcUsd = toBigDecimal(btcMap.get("usd"));
-            BigDecimal btcBrl = toBigDecimal(btcMap.get("brl"));
-            if (btcUsd == null) {
-                return Optional.empty();
-            }
-            BigDecimal usdBrl = btcBrl != null && btcUsd.compareTo(BigDecimal.ZERO) > 0
-                    ? btcBrl.divide(btcUsd, 8, RoundingMode.DOWN)
-                    : null;
-
-            return Optional.of(new FxRateSnapshot(btcUsd, usdBrl));
+            BigDecimal usdBrl = fetchUsdBrlRate();
+            return Optional.of(new FxRateSnapshot(btcUsd.get(), usdBrl));
         } catch (Exception e) {
-            log.warn("Failed to fetch CoinGecko rates", e);
+            log.warn("Failed to fetch CoinCap rates", e);
             return Optional.empty();
         }
     }
@@ -87,15 +59,11 @@ public class CoinGeckoFxRateProvider implements FxRateProvider {
                     .baseUrl(baseUrl)
                     .build();
             String response = client.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path(ENDPOINT)
-                            .queryParam("ids", assetId)
-                            .queryParam("vs_currencies", "usd")
-                            .build())
+                    .uri(ASSET_ENDPOINT, assetId)
                     .accept(MediaType.APPLICATION_JSON)
                     .headers(headers -> {
                         if (apiKey != null && !apiKey.isBlank()) {
-                            headers.add("x-cg-pro-api-key", apiKey);
+                            headers.add("Authorization", "Bearer " + apiKey);
                         }
                     })
                     .retrieve()
@@ -104,16 +72,54 @@ public class CoinGeckoFxRateProvider implements FxRateProvider {
             if (response == null || response.isBlank()) {
                 return Optional.empty();
             }
-
             Map<String, Object> payload = objectMapper.readValue(response, new TypeReference<>() {});
-            Object asset = payload.get(assetId);
-            if (!(asset instanceof Map<?, ?> assetMap)) {
+            Object data = payload.get("data");
+            if (!(data instanceof Map<?, ?> dataMap)) {
                 return Optional.empty();
             }
-            return Optional.ofNullable(toBigDecimal(assetMap.get("usd")));
+            BigDecimal priceUsd = toBigDecimal(dataMap.get("priceUsd"));
+            return Optional.ofNullable(priceUsd);
         } catch (Exception e) {
-            log.warn("Failed to fetch CoinGecko price for asset={}", assetId, e);
+            log.warn("Failed to fetch CoinCap price for asset={}", assetId, e);
             return Optional.empty();
+        }
+    }
+
+    private BigDecimal fetchUsdBrlRate() {
+        if (usdBrlRateId == null || usdBrlRateId.isBlank()) {
+            return null;
+        }
+        try {
+            RestClient client = RestClient.builder()
+                    .baseUrl(baseUrl)
+                    .build();
+            String response = client.get()
+                    .uri(RATE_ENDPOINT, usdBrlRateId)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .headers(headers -> {
+                        if (apiKey != null && !apiKey.isBlank()) {
+                            headers.add("Authorization", "Bearer " + apiKey);
+                        }
+                    })
+                    .retrieve()
+                    .body(String.class);
+
+            if (response == null || response.isBlank()) {
+                return null;
+            }
+            Map<String, Object> payload = objectMapper.readValue(response, new TypeReference<>() {});
+            Object data = payload.get("data");
+            if (!(data instanceof Map<?, ?> dataMap)) {
+                return null;
+            }
+            BigDecimal rateUsd = toBigDecimal(dataMap.get("rateUsd"));
+            if (rateUsd == null || rateUsd.compareTo(BigDecimal.ZERO) <= 0) {
+                return null;
+            }
+            return BigDecimal.ONE.divide(rateUsd, 8, RoundingMode.DOWN);
+        } catch (Exception e) {
+            log.warn("Failed to fetch CoinCap USD/BRL rate", e);
+            return null;
         }
     }
 

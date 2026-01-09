@@ -170,7 +170,7 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
             }
         }
 
-        Optional<FixedFloatOrderEntity> order = fixedfloatOrderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId);
+        Optional<FixedFloatOrderEntity> order = fixedFloatOrderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId);
         if (order.isPresent() && order.get().getAmount() != null) {
             if ("USDT".equalsIgnoreCase(order.get().getToCcy())) {
                 BigDecimal amountBtc = new BigDecimal(order.get().getAmount());
@@ -263,7 +263,7 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
             return fxRateProvider.fetchAssetUsd("bitcoin").orElse(null);
         }
         return networkAssetService.findAsset(network)
-                .map(asset -> asset.coingeckoId())
+                .map(asset -> asset.priceId())
                 .filter(id -> id != null && !id.isBlank())
                 .flatMap(id -> fxRateProvider.fetchAssetUsd(id))
                 .orElse(null);
@@ -310,7 +310,7 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
         Map<String, Object> payload = new HashMap<>();
         pairSimulationRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
                 .ifPresent(simulation -> payload.put("sideshiftPair", simulation));
-        fixedfloatOrderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
+        fixedFloatOrderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
                 .ifPresent(order -> payload.put("fixedfloatOrder", order));
         try {
             return objectMapper.writeValueAsString(payload);
