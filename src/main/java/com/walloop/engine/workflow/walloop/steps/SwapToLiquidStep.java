@@ -79,7 +79,7 @@ public class SwapToLiquidStep implements WorkflowStep {
         }
 
         if (shiftEntity.getStatus() == SideShiftShiftStatus.SETTLED) {
-            return StepResult.completed(WorkflowStatus.LIQUID_SWAP_COMPLETED.name());
+            return StepResult.completed("Swap to Liquid settled");
         }
 
         if (shiftEntity.getWithdrawCompletedAt() == null) {
@@ -91,7 +91,7 @@ public class SwapToLiquidStep implements WorkflowStep {
                 shiftRepository.save(shiftEntity);
                 log.info("Withdraw requested for processId={} destination=SIDESHIFT", processId);
             }
-            return StepResult.waiting("Waiting for withdraw completion");
+            return StepResult.waiting("Waiting for SideShift withdrawal confirmation");
         }
 
         return StepResult.waiting("Waiting for SideShift settlement");

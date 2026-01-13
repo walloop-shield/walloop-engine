@@ -62,14 +62,14 @@ public class LightningInboundLiquidityService {
                 .findFirstByProcessIdAndStatusInOrderByCreatedAtDesc(processId, PENDING_STATUSES);
         if (pending.isPresent()) {
             return InboundLiquidityCheck.retryCheck(
-                    "Inbound liquidity pending",
+                    "Waiting for inbound liquidity",
                     retryDelay
             );
         }
 
         if (lspBaseUrl == null || lspBaseUrl.isBlank() || lspApiKey == null || lspApiKey.isBlank()) {
             return InboundLiquidityCheck.retryCheck(
-                    "Inbound liquidity below target and LSP not configured",
+                    "Inbound liquidity below target - LSP not configured",
                     retryDelay
             );
         }
@@ -105,7 +105,7 @@ public class LightningInboundLiquidityService {
 
         entity.setUpdatedAt(OffsetDateTime.now());
         requestRepository.save(entity);
-        return InboundLiquidityCheck.retryCheck("Inbound liquidity requested", retryDelay);
+        return InboundLiquidityCheck.retryCheck("Inbound liquidity requested - Awaiting provision", retryDelay);
     }
 
     private long resolveInboundSats() {

@@ -58,7 +58,7 @@ public class PayLiquidToLightningStep implements WorkflowStep {
         }
 
         if (LightningInvoiceStatus.PAID.equals(invoiceEntity.getStatus())) {
-            return StepResult.completed("Payment to LN confirmed by Boltz");
+            return StepResult.completed("Lightning payment confirmed by Boltz");
         }
 
         if (invoiceEntity.getBoltzSwapId() == null) {

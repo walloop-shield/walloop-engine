@@ -31,6 +31,6 @@ public class CreateLiquidWalletStep implements WorkflowStep {
         LiquidWalletEntity wallet = liquidWalletService.createForTransaction(processId, ownerId);
         context.put(WalloopWorkflowContextKeys.LIQUID_ADDRESS, wallet.getAddress());
         log.info("Liquid wallet ready for processId={} owner={} address={}", processId, ownerId, wallet.getAddress());
-        return StepResult.completed(WorkflowStatus.WALLET_LIQUID_COMPLETED.name());
+        return StepResult.completed("Liquid wallet ready");
     }
 }

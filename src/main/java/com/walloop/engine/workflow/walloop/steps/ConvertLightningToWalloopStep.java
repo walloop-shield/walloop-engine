@@ -105,11 +105,11 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
 
         if (fixedFloatOrderService.isCompleted(order)) {
             log.info("FixedFloat order completed processId={} orderId={}", processId, order.getOrderId());
-            return StepResult.completed("Funds sent to correlated wallet");
+            return StepResult.completed("Funds sent to destination wallet");
         }
 
         log.info("FixedFloat order pending processId={} orderId={}", processId, order.getOrderId());
-        return StepResult.waiting("Awaiting FixedFloat confirmation");
+        return StepResult.waiting("Waiting for FixedFloat confirmation");
     }
 
     private String toHex(byte[] bytes) {

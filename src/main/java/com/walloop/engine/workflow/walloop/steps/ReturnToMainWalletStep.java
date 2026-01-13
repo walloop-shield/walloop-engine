@@ -55,6 +55,6 @@ public class ReturnToMainWalletStep implements WorkflowStep {
             log.info("Withdraw requested for processId={} destination=WALLOOP", processId);
         }
 
-        return StepResult.waiting("Waiting for withdraw confirmation");
+        return StepResult.waiting("Waiting for destination wallet withdrawal confirmation");
     }
 }

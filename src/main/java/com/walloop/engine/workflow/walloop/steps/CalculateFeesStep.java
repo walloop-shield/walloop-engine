@@ -31,7 +31,7 @@ public class CalculateFeesStep implements WorkflowStep {
         context.put(WalloopWorkflowContextKeys.FEE, fee);
 
         log.info("Fee calculated (sats)={} processId={}", fee, processId);
-        return StepResult.completed("Fee calculated");
+        return StepResult.completed("Fees calculated");
     }
 }
 

@@ -39,7 +39,7 @@ public class AwaitWalloopDepositStep implements WorkflowStep {
                 .map(monitor -> {
                     if (monitor.getStatus() == DepositMonitorStatus.DETECTED) {
                         log.info("Deposit detected for processId={} ownerId={}", processId, ownerId);
-                        return StepResult.completed("Deposit detected");
+                        return StepResult.completed("Deposit confirmed");
                     }
                     return StepResult.waiting("Waiting for deposit to appear on Walloop wallet");
                 })
@@ -56,7 +56,7 @@ public class AwaitWalloopDepositStep implements WorkflowStep {
 
                     depositMonitorPublisher.publish(new DepositMonitorMessage(address, network, ownerId, processId));
                     log.info("Deposit monitor created for processId={} ownerId={} address={} network={}", processId, ownerId, address, network);
-                    return StepResult.waiting("Deposit monitor created");
+                    return StepResult.waiting("Deposit monitoring started");
                 });
     }
 }

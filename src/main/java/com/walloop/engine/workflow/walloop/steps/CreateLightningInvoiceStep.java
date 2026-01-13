@@ -34,7 +34,7 @@ public class CreateLightningInvoiceStep implements WorkflowStep {
                 inboundLiquidityService.ensureInboundLiquidity(processId);
         if (!inboundCheck.ready()) {
             Duration retryAfter = inboundCheck.retryAfter() != null ? inboundCheck.retryAfter() : Duration.ofMinutes(5);
-            String detail = inboundCheck.detail() != null ? inboundCheck.detail() : "Inbound liquidity pending";
+            String detail = inboundCheck.detail() != null ? inboundCheck.detail() : "Waiting for inbound liquidity";
             return StepResult.retry(detail, retryAfter);
         }
 
