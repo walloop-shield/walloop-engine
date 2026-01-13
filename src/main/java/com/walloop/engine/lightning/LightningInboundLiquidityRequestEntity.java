@@ -7,7 +7,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -42,8 +41,7 @@ public class LightningInboundLiquidityRequestEntity {
     @Column
     private String externalId;
 
-    @Lob
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String responsePayload;
 
     @Column

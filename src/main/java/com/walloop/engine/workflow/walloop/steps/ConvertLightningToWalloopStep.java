@@ -10,6 +10,7 @@ import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.WorkflowContext;
 import com.walloop.engine.workflow.WorkflowStep;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,8 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
 
     private static final String PAYMENT_STATUS_PAID = "PAID";
     private static final String PAYMENT_STATUS_FAILED = "FAILED";
+    private static final int MAX_PAYMENT_RETRIES = 5;
+    private static final Duration PAYMENT_RETRY_DELAY = Duration.ofMinutes(5);
 
     @Override
     public String key() {
@@ -61,22 +64,27 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
         );
 
         if (!PAYMENT_STATUS_PAID.equals(order.getPaymentStatus())) {
+            int attempts = order.getPaymentAttempts() == null ? 0 : order.getPaymentAttempts();
+            if (attempts >= MAX_PAYMENT_RETRIES) {
+                return StepResult.failed("FixedFloat payment retries exhausted for processId=" + processId);
+            }
             String paymentRequest = order.getPaymentRequest();
             if (paymentRequest == null || paymentRequest.isBlank()) {
                 throw new IllegalStateException("FixedFloat payment request not available for processId=" + processId);
             }
             try {
+                order.setPaymentAttempts(attempts + 1);
+                order.setPaymentAttemptedAt(OffsetDateTime.now());
                 SendRequest request = new SendRequest();
                 request.setPaymentRequest(paymentRequest);
                 SendResponse response = lndApi.sendPaymentSync(request);
                 String paymentError = response.getPaymentError();
-                order.setPaymentAttemptedAt(OffsetDateTime.now());
                 if (paymentError != null && !paymentError.isBlank()) {
                     order.setPaymentStatus(PAYMENT_STATUS_FAILED);
                     order.setPaymentError(paymentError);
                     order.setUpdatedAt(OffsetDateTime.now());
                     fixedFloatOrderRepository.save(order);
-                    return StepResult.failed("FixedFloat payment failed: " + paymentError);
+                    return StepResult.retry("FixedFloat payment failed: " + paymentError, PAYMENT_RETRY_DELAY);
                 }
                 order.setPaymentStatus(PAYMENT_STATUS_PAID);
                 order.setPaymentPreimage(toHex(response.getPaymentPreimage()));
@@ -89,7 +97,7 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
                 order.setPaymentError(e.getMessage());
                 order.setUpdatedAt(OffsetDateTime.now());
                 fixedFloatOrderRepository.save(order);
-                return StepResult.failed("FixedFloat payment failed for processId=" + processId);
+                return StepResult.retry("FixedFloat payment failed for processId=" + processId, PAYMENT_RETRY_DELAY);
             }
         }
 

@@ -59,7 +59,7 @@ public class LightningInboundLiquidityService {
         }
 
         Optional<LightningInboundLiquidityRequestEntity> pending = requestRepository
-                .findFirstByStatusInOrderByCreatedAtDesc(PENDING_STATUSES);
+                .findFirstByProcessIdAndStatusInOrderByCreatedAtDesc(processId, PENDING_STATUSES);
         if (pending.isPresent()) {
             return InboundLiquidityCheck.retryCheck(
                     "Inbound liquidity pending",

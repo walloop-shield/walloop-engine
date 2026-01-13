@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -67,7 +66,7 @@ public class FeeCalculationEntity {
     @Column
     private BigDecimal totalFeeBrl;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String payload;
 
     @Column(nullable = false)

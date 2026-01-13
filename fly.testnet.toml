@@ -10,7 +10,7 @@ primary_region = "gru"
   OTEL_TRACES_EXPORTER = "none"
   EUREKA_CLIENT_ENABLED = "true"
   EUREKA_CLIENT_SERVICE_URL = "http://testnet-walloop-edge.internal:8761/eureka"
-  WALLOOP_WALLET_BASE_URL = "http://walloop-wallet.internal:8080"
+  WALLOOP_WALLET_BASE_URL = "http://testnet-walloop-wallet.internal:8080"
   SPRING_RABBITMQ_SSL_ENABLED = "true"
 
 [http_service]
@@ -33,5 +33,5 @@ primary_region = "gru"
   wait_timeout = "5m"
 
 [vm]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  size = "shared-cpu-2x"
+  memory = "1024mb"

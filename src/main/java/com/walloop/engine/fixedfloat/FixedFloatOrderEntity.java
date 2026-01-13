@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -45,13 +44,13 @@ public class FixedFloatOrderEntity {
     @Column
     private Integer confirmations;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String paymentRequest;
 
     @Column
     private String paymentStatus;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String paymentError;
 
     @Column
@@ -64,14 +63,15 @@ public class FixedFloatOrderEntity {
     private OffsetDateTime paymentAttemptedAt;
 
     @Column
+    private Integer paymentAttempts;
+
+    @Column
     private OffsetDateTime paymentCompletedAt;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String requestPayload;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String responsePayload;
 
     @Column(nullable = false)
@@ -208,6 +208,14 @@ public class FixedFloatOrderEntity {
 
     public void setPaymentAttemptedAt(OffsetDateTime paymentAttemptedAt) {
         this.paymentAttemptedAt = paymentAttemptedAt;
+    }
+
+    public Integer getPaymentAttempts() {
+        return paymentAttempts;
+    }
+
+    public void setPaymentAttempts(Integer paymentAttempts) {
+        this.paymentAttempts = paymentAttempts;
     }
 
     public OffsetDateTime getPaymentCompletedAt() {

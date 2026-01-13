@@ -29,6 +29,8 @@ public class TransactionEngineServiceImpl implements TransactionEngineService {
                 message.getOwnerId()
         );
 
+        // TODO se transação não existe não pode seguir
+
         WorkflowContext context = new WorkflowContext();
         context.put(WalloopWorkflowContextKeys.PROCESS_ID, message.getProcessId());
         context.put(WalloopWorkflowContextKeys.OWNER_ID, message.getOwnerId());

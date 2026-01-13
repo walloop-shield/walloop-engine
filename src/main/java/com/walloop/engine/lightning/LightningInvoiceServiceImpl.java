@@ -1,5 +1,6 @@
 package com.walloop.engine.lightning;
 
+import com.walloop.engine.fee.FxRateProvider;
 import com.walloop.engine.liquid.entity.LiquidWalletEntity;
 import com.walloop.engine.liquid.repository.LiquidWalletRepository;
 import com.walloop.engine.liquid.service.LiquidRpcService;
@@ -8,6 +9,7 @@ import com.walloop.engine.sideshift.SideShiftPairSimulationRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.lightningj.lnd.wrapper.SynchronousLndAPI;
@@ -27,6 +29,7 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     private final LiquidWalletRepository liquidWalletRepository;
     private final LiquidRpcService liquidRpcService;
     private final SideShiftPairSimulationRepository pairSimulationRepository;
+    private final FxRateProvider fxRateProvider;
 
     @Value("${walloop.lightning.invoice-expiry-seconds:7200}")
     private long invoiceExpirySeconds;
@@ -34,8 +37,34 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     @Override
     public String createOrGetInvoice(UUID processId, UUID ownerId) {
         return repository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
-                .map(LightningInvoiceEntity::getInvoice)
+                .map(existing -> resolveInvoice(processId, ownerId, existing))
                 .orElseGet(() -> createInvoice(processId, ownerId));
+    }
+
+    private String resolveInvoice(UUID processId, UUID ownerId, LightningInvoiceEntity existing) {
+        if (existing.getStatus() != LightningInvoiceStatus.CREATED) {
+            return existing.getInvoice();
+        }
+
+        if (isExpired(existing)) {
+            return createInvoice(processId, ownerId);
+        }
+
+        BalanceSnapshot snapshot = buildBalanceSnapshot(processId, ownerId);
+        Long existingMsats = existing.getBalanceMsats();
+        if (existingMsats == null || !existingMsats.equals(snapshot.balanceMsats())) {
+            return createInvoice(processId, ownerId);
+        }
+
+        return existing.getInvoice();
+    }
+
+    private boolean isExpired(LightningInvoiceEntity existing) {
+        OffsetDateTime createdAt = existing.getCreatedAt();
+        if (createdAt == null) {
+            return true;
+        }
+        return createdAt.plusSeconds(invoiceExpirySeconds).isBefore(OffsetDateTime.now());
     }
 
     private String createInvoice(UUID processId, UUID ownerId) {
@@ -74,7 +103,7 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     }
 
     private BalanceSnapshot buildBalanceSnapshot(UUID processId, UUID ownerId) {
-        LiquidWalletEntity wallet = liquidWalletRepository.findFirstByTransactionIdAndOwnerId(processId, ownerId)
+        LiquidWalletEntity wallet = liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
                 .orElseThrow(() -> new IllegalStateException("Liquid wallet not found for processId=" + processId));
 
         BigDecimal balanceBtc = liquidRpcService.getReceivedByAddress(wallet.getAddress());
@@ -99,29 +128,50 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     }
 
     private BigDecimal resolveUsdtValue(UUID processId, BigDecimal balanceBtc) {
-        SideShiftPairSimulationEntity simulation = pairSimulationRepository
-                .findFirstByProcessIdOrderByCreatedAtDesc(processId)
-                .orElseThrow(() -> new IllegalStateException("SideShift pair simulation not found for processId=" + processId));
-
-        String rateValue = simulation.getRate();
-        if (rateValue == null || rateValue.isBlank()) {
-            throw new IllegalStateException("SideShift pair rate not available for processId=" + processId);
+        Optional<SideShiftPairSimulationEntity> simulation = pairSimulationRepository
+                .findFirstByProcessIdOrderByCreatedAtDesc(processId);
+        if (simulation.isPresent()) {
+            BigDecimal usdtFromPair = resolveUsdtFromPair(balanceBtc, simulation.get());
+            if (usdtFromPair != null) {
+                return usdtFromPair;
+            }
         }
 
+        return fxRateProvider.fetchAssetUsd("bitcoin")
+                .filter(rate -> rate.compareTo(BigDecimal.ZERO) > 0)
+                .map(rate -> balanceBtc.multiply(rate).setScale(8, RoundingMode.DOWN))
+                .orElseThrow(() -> new IllegalStateException("USDT rate not available for processId=" + processId));
+    }
+
+    private BigDecimal resolveUsdtFromPair(BigDecimal balanceBtc, SideShiftPairSimulationEntity simulation) {
+        String rateValue = simulation.getRate();
+        if (rateValue == null || rateValue.isBlank()) {
+            return null;
+        }
         BigDecimal rate = new BigDecimal(rateValue);
         if (rate.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalStateException("SideShift pair rate invalid for processId=" + processId);
+            return null;
         }
         String fromCoin = simulation.getFromCoin();
         String toCoin = simulation.getToCoin();
-        if ("usdt".equalsIgnoreCase(fromCoin) && "btc".equalsIgnoreCase(toCoin)) {
+        if ("usdt".equalsIgnoreCase(fromCoin) && isBtcSymbol(toCoin)) {
             return balanceBtc.divide(rate, 8, RoundingMode.DOWN);
         }
-        if ("btc".equalsIgnoreCase(fromCoin) && "usdt".equalsIgnoreCase(toCoin)) {
+        if (isBtcSymbol(fromCoin) && "usdt".equalsIgnoreCase(toCoin)) {
             return balanceBtc.multiply(rate).setScale(8, RoundingMode.DOWN);
         }
+        return null;
+    }
 
-        throw new IllegalStateException("SideShift pair does not cover BTC/USDT for processId=" + processId);
+    private boolean isBtcSymbol(String value) {
+        if (value == null) {
+            return false;
+        }
+        String normalized = value.trim().toLowerCase();
+        return "btc".equals(normalized)
+                || "l-btc".equals(normalized)
+                || "lbtc".equals(normalized)
+                || "liquid".equals(normalized);
     }
 
     private record BalanceSnapshot(String balanceBtc, long balanceSats, long balanceMsats, String balanceUsdt) {

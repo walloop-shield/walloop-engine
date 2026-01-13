@@ -2,8 +2,8 @@ package com.walloop.engine.liquid.service;
 
 import com.walloop.engine.liquid.entity.LiquidWalletEntity;
 import com.walloop.engine.liquid.repository.LiquidWalletRepository;
-import com.walloop.engine.liquid.service.LiquidRpcService;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +21,10 @@ public class LiquidWalletServiceImpl implements LiquidWalletService {
     @Override
     @Transactional
     public LiquidWalletEntity createForTransaction(UUID transactionId, UUID ownerId) {
+        Optional<LiquidWalletEntity> existing = repository.findFirstByTransactionIdOrderByCreatedAtDesc(transactionId);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
         String label = "tx-" + transactionId;
         String address = rpcService.getNewAddress(label);
         String privateKey = rpcService.dumpPrivateKey(address);

@@ -8,7 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface LightningInboundLiquidityRequestRepository
         extends JpaRepository<LightningInboundLiquidityRequestEntity, UUID> {
 
-    Optional<LightningInboundLiquidityRequestEntity> findFirstByStatusInOrderByCreatedAtDesc(
+    Optional<LightningInboundLiquidityRequestEntity> findFirstByProcessIdAndStatusInOrderByCreatedAtDesc(
+            UUID processId,
             List<LightningInboundLiquidityRequestStatus> statuses
     );
 }

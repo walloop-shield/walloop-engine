@@ -46,7 +46,6 @@ public class PayLiquidToLightningStep implements WorkflowStep {
     @Override
     public StepResult execute(WorkflowContext context) {
         UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
-        UUID ownerId = context.require(WalloopWorkflowContextKeys.OWNER_ID, UUID.class);
 
         LightningInvoiceEntity invoiceEntity = lightningInvoiceRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
                 .orElseThrow(() -> new IllegalStateException("Lightning invoice not found for processId=" + processId));
@@ -83,7 +82,7 @@ public class PayLiquidToLightningStep implements WorkflowStep {
         }
 
         if (invoiceEntity.getLiquidTxId() == null) {
-            LiquidWalletEntity wallet = liquidWalletRepository.findFirstByTransactionIdAndOwnerId(processId, ownerId)
+            LiquidWalletEntity wallet = liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
                     .orElseThrow(() -> new IllegalStateException("Liquid wallet not found for processId=" + processId));
 
             String destinationAddress = invoiceEntity.getBoltzLockupAddress();

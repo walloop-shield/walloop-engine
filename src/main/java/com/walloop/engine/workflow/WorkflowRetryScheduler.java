@@ -1,5 +1,6 @@
 package com.walloop.engine.workflow;
 
+import com.walloop.engine.liquid.repository.LiquidWalletRepository;
 import com.walloop.engine.transaction.dto.WalletTransactionDetails;
 import com.walloop.engine.transaction.service.WalletTransactionQueryService;
 import com.walloop.engine.workflow.walloop.WalloopEngineWorkflow;
@@ -26,6 +27,7 @@ public class WorkflowRetryScheduler {
 
     private final WorkflowExecutionRepository executionRepository;
     private final WalletTransactionQueryService walletTransactionQueryService;
+    private final LiquidWalletRepository liquidWalletRepository;
     private final WorkflowOrchestrator orchestrator;
     private final ObjectProvider<WalloopEngineWorkflow> workflowProvider;
     private final TaskScheduler taskScheduler;
@@ -106,6 +108,8 @@ public class WorkflowRetryScheduler {
         context.put(WalloopWorkflowContextKeys.CORRELATED_ADDRESS, tx.correlatedAddress());
         context.put(WalloopWorkflowContextKeys.DESTINATION_ADDRESS, tx.newAddress2());
         context.put(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, tx.newAddress());
+        liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
+                .ifPresent(wallet -> context.put(WalloopWorkflowContextKeys.LIQUID_ADDRESS, wallet.getAddress()));
 
         WalloopEngineWorkflow workflow = workflowProvider.getObject();
         orchestrator.resume(execution.getId(), workflow, context);

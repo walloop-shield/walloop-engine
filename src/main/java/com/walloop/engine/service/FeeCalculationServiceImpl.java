@@ -8,11 +8,15 @@ import com.walloop.engine.fee.FeeCalculationEntity;
 import com.walloop.engine.fee.FeeCalculationRepository;
 import com.walloop.engine.fixedfloat.FixedFloatOrderEntity;
 import com.walloop.engine.fixedfloat.FixedFloatOrderRepository;
+import com.walloop.engine.liquid.entity.LiquidWalletEntity;
+import com.walloop.engine.liquid.repository.LiquidWalletRepository;
 import com.walloop.engine.fee.FxRateProvider;
 import com.walloop.engine.fee.FxRateSnapshot;
 import com.walloop.engine.network.NetworkAssetService;
 import com.walloop.engine.sideshift.SideShiftPairSimulationEntity;
 import com.walloop.engine.sideshift.SideShiftPairSimulationRepository;
+import com.walloop.engine.transaction.dto.WalletTransactionDetails;
+import com.walloop.engine.transaction.service.WalletTransactionQueryService;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
@@ -43,6 +47,8 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
     private final WithdrawalTransactionRepository withdrawalTransactionRepository;
     private final NetworkAssetService networkAssetService;
     private final FxRateProvider fxRateProvider;
+    private final WalletTransactionQueryService walletTransactionQueryService;
+    private final LiquidWalletRepository liquidWalletRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${walloop.fee.platform-percent:0.5}")
@@ -116,7 +122,7 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
         entity.setTotalFeeBtc(totalFeeBtc);
         entity.setTotalFeeUsd(totalFeeUsd);
         entity.setTotalFeeBrl(totalFeeBrl);
-        entity.setPayload(buildPayload(transactionId));
+        entity.setPayload(buildPayload(transactionId, ownerId));
         entity.setCreatedAt(OffsetDateTime.now());
         feeCalculationRepository.save(entity);
 
@@ -306,8 +312,12 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
         }
     }
 
-    private String buildPayload(UUID processId) {
+    private String buildPayload(UUID processId, UUID ownerId) {
         Map<String, Object> payload = new HashMap<>();
+        walletTransactionQueryService.find(processId, ownerId)
+                .ifPresent(tx -> payload.put("context", buildContext(tx)));
+        liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
+                .ifPresent(wallet -> payload.put("liquidWallet", buildLiquidWalletPayload(wallet)));
         pairSimulationRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
                 .ifPresent(simulation -> payload.put("sideshiftPair", simulation));
         fixedFloatOrderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
@@ -317,5 +327,21 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private Map<String, Object> buildContext(WalletTransactionDetails tx) {
+        Map<String, Object> context = new HashMap<>();
+        context.put("chain", tx.chain());
+        context.put("correlatedAddress", tx.correlatedAddress());
+        context.put("transactionAddress", tx.newAddress());
+        context.put("destinationAddress", tx.newAddress2());
+        return context;
+    }
+
+    private Map<String, Object> buildLiquidWalletPayload(LiquidWalletEntity wallet) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("address", wallet.getAddress());
+        payload.put("label", wallet.getLabel());
+        return payload;
     }
 }

@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -60,12 +59,10 @@ public class SideShiftPairSimulationEntity {
     @Column(name = "settle_network")
     private String settleNetwork;
 
-    @Lob
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String requestPayload;
 
-    @Lob
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String responsePayload;
 
     @Column(nullable = false)

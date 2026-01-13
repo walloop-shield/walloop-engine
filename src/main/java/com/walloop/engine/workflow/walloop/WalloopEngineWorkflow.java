@@ -37,8 +37,8 @@ public class WalloopEngineWorkflow implements WorkflowDefinition {
         return List.of(
                 awaitWalloopDepositStep,
                 createLiquidWalletStep,
-                createLightningInvoiceStep,
                 swapToLiquidStep,
+                createLightningInvoiceStep,
                 payLiquidToLightningStep,
                 convertLightningToWalloopStep,
                 returnToMainWalletStep,

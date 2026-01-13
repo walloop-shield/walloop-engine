@@ -52,26 +52,22 @@ public class LightningInvoiceEntity {
     @Column
     private String liquidTxId;
 
-    @jakarta.persistence.Lob
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String boltzRequestPayload;
 
-    @jakarta.persistence.Lob
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String boltzResponsePayload;
 
     @Column
     private String boltzStatus;
 
-    @jakarta.persistence.Lob
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String boltzDecodedTransactionPayload;
 
     @Column
     private Long boltzPaidAmountSats;
 
-    @jakarta.persistence.Lob
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String boltzStatusPayload;
 
     private OffsetDateTime boltzPaidAt;

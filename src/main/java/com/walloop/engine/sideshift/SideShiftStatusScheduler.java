@@ -1,5 +1,6 @@
 package com.walloop.engine.sideshift;
 
+import com.walloop.engine.liquid.repository.LiquidWalletRepository;
 import com.walloop.engine.transaction.dto.WalletTransactionDetails;
 import com.walloop.engine.transaction.service.WalletTransactionQueryService;
 import com.walloop.engine.workflow.WorkflowContext;
@@ -32,6 +33,7 @@ public class SideShiftStatusScheduler {
     private final SideShiftProperties properties;
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final WalletTransactionQueryService walletTransactionQueryService;
+    private final LiquidWalletRepository liquidWalletRepository;
     private final WorkflowOrchestrator orchestrator;
     private final ObjectProvider<WalloopEngineWorkflow> workflowProvider;
     private final TaskScheduler taskScheduler;
@@ -168,6 +170,8 @@ public class SideShiftStatusScheduler {
         context.put(WalloopWorkflowContextKeys.CORRELATED_ADDRESS, tx.correlatedAddress());
         context.put(WalloopWorkflowContextKeys.DESTINATION_ADDRESS, tx.newAddress2());
         context.put(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, tx.newAddress());
+        liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
+                .ifPresent(wallet -> context.put(WalloopWorkflowContextKeys.LIQUID_ADDRESS, wallet.getAddress()));
         return context;
     }
 }
