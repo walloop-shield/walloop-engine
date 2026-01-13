@@ -119,7 +119,7 @@ walloop:
     invoice-expiry-seconds: 7200
     inbound-target-sats: 1000000
     inbound-check-enabled: true
-    inbound-retry-delay: PT10M
+    inbound-retry-delay: PT1M
     lsp:
       provider: amboss-magma
       node-pubkey: 030f0b8e9b8b047df76db393dcd9278994020dda10cc909ac294aa4aca778f25b3
