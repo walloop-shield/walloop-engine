@@ -4,9 +4,11 @@ import com.walloop.engine.liquid.entity.LiquidWalletEntity;
 import com.walloop.engine.liquid.service.LiquidWalletService;
 import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.WorkflowContext;
-import com.walloop.engine.workflow.WorkflowStatus;
+import com.walloop.engine.workflow.WorkflowExecutionRepository;
+import com.walloop.engine.workflow.StepStatus;
 import com.walloop.engine.workflow.WorkflowStep;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
+import java.time.Duration;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,10 @@ import org.springframework.stereotype.Component;
 public class CreateLiquidWalletStep implements WorkflowStep {
 
     private final LiquidWalletService liquidWalletService;
+    private final WorkflowExecutionRepository executionRepository;
+
+    private static final int MAX_RETRIES = 5;
+    private static final Duration RETRY_DELAY = Duration.ofMinutes(5);
 
     @Override
     public String key() {
@@ -28,9 +34,33 @@ public class CreateLiquidWalletStep implements WorkflowStep {
     public StepResult execute(WorkflowContext context) {
         UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
         UUID ownerId = context.require(WalloopWorkflowContextKeys.OWNER_ID, UUID.class);
-        LiquidWalletEntity wallet = liquidWalletService.createForTransaction(processId, ownerId);
-        context.put(WalloopWorkflowContextKeys.LIQUID_ADDRESS, wallet.getAddress());
-        log.info("Liquid wallet ready for processId={} owner={} address={}", processId, ownerId, wallet.getAddress());
-        return StepResult.completed("Liquid wallet ready");
+        try {
+            LiquidWalletEntity wallet = liquidWalletService.createForTransaction(processId, ownerId);
+            context.put(WalloopWorkflowContextKeys.LIQUID_ADDRESS, wallet.getAddress());
+            log.info("Liquid wallet ready for processId={} owner={} address={}", processId, ownerId, wallet.getAddress());
+            return StepResult.completed("Liquid wallet ready");
+        } catch (RuntimeException e) {
+            return retryOrFail(processId, "Liquid wallet creation failed", e);
+        }
+    }
+
+    private StepResult retryOrFail(UUID processId, String detail, RuntimeException error) {
+        int retries = countRetries(processId);
+        if (retries >= MAX_RETRIES) {
+            log.warn("{} after {} retries processId={}", detail, retries, processId, error);
+            return StepResult.failed(detail + " after retries");
+        }
+        log.warn("{} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
+        return StepResult.retry(detail, RETRY_DELAY);
+    }
+
+    private int countRetries(UUID processId) {
+        return executionRepository.findByTransactionId(processId)
+                .map(execution -> execution.getHistory().stream()
+                        .filter(item -> key().equals(item.stepKey()))
+                        .filter(item -> item.status() == StepStatus.RETRY)
+                        .count())
+                .map(Long::intValue)
+                .orElse(0);
     }
 }

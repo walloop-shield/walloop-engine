@@ -14,9 +14,12 @@ import com.walloop.engine.liquid.repository.LiquidWalletRepository;
 import com.walloop.engine.liquid.service.LiquidRpcService;
 import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.WorkflowContext;
+import com.walloop.engine.workflow.WorkflowExecutionRepository;
+import com.walloop.engine.workflow.StepStatus;
 import com.walloop.engine.workflow.WorkflowStep;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +40,10 @@ public class PayLiquidToLightningStep implements WorkflowStep {
     private final LiquidRpcService liquidRpcService;
     private final BoltzStatusScheduler boltzStatusScheduler;
     private final ObjectMapper objectMapper;
+    private final WorkflowExecutionRepository executionRepository;
+
+    private static final int MAX_RETRIES = 5;
+    private static final Duration RETRY_DELAY = Duration.ofMinutes(5);
 
     @Override
     public String key() {
@@ -62,23 +69,27 @@ public class PayLiquidToLightningStep implements WorkflowStep {
         }
 
         if (invoiceEntity.getBoltzSwapId() == null) {
-            BoltzSubmarineRequest request = BoltzSubmarineRequest.builder()
-                    .from(BOLTZ_FROM_ASSET)
-                    .to(BOLTZ_TO_ASSET)
-                    .invoice(invoice)
-                    .build();
-            BoltzSubmarineResponse response = boltzClient.createSubmarineSwap(request);
-            if (response == null || response.id() == null || response.id().isBlank()) {
-                throw new IllegalStateException("Boltz swap response missing id for processId=" + processId);
+            try {
+                BoltzSubmarineRequest request = BoltzSubmarineRequest.builder()
+                        .from(BOLTZ_FROM_ASSET)
+                        .to(BOLTZ_TO_ASSET)
+                        .invoice(invoice)
+                        .build();
+                BoltzSubmarineResponse response = boltzClient.createSubmarineSwap(request);
+                if (response == null || response.id() == null || response.id().isBlank()) {
+                    return retryOrFail(processId, "Boltz swap response missing id", null);
+                }
+                invoiceEntity.setBoltzSwapId(response.id());
+                invoiceEntity.setBoltzLockupAddress(response.address());
+                invoiceEntity.setBoltzExpectedAmount(response.expectedAmount());
+                invoiceEntity.setBoltzRequestPayload(toJson(request));
+                invoiceEntity.setBoltzResponsePayload(toJson(response));
+                invoiceEntity.setUpdatedAt(OffsetDateTime.now());
+                lightningInvoiceRepository.save(invoiceEntity);
+                boltzStatusScheduler.ensurePolling();
+            } catch (RuntimeException e) {
+                return retryOrFail(processId, "Boltz swap creation failed", e);
             }
-            invoiceEntity.setBoltzSwapId(response.id());
-            invoiceEntity.setBoltzLockupAddress(response.address());
-            invoiceEntity.setBoltzExpectedAmount(response.expectedAmount());
-            invoiceEntity.setBoltzRequestPayload(toJson(request));
-            invoiceEntity.setBoltzResponsePayload(toJson(response));
-            invoiceEntity.setUpdatedAt(OffsetDateTime.now());
-            lightningInvoiceRepository.save(invoiceEntity);
-            boltzStatusScheduler.ensurePolling();
         }
 
         if (invoiceEntity.getLiquidTxId() == null) {
@@ -91,23 +102,47 @@ public class PayLiquidToLightningStep implements WorkflowStep {
                 throw new IllegalStateException("Boltz lockup data missing for processId=" + processId);
             }
 
-            if (wallet.getPrivateKey() != null && !wallet.getPrivateKey().isBlank()) {
-                liquidRpcService.importPrivateKey(wallet.getPrivateKey(), "walloop", false);
-            }
+            try {
+                if (wallet.getPrivateKey() != null && !wallet.getPrivateKey().isBlank()) {
+                    liquidRpcService.importPrivateKey(wallet.getPrivateKey(), "walloop", false);
+                }
 
-            String amount = BigDecimal.valueOf(expectedAmount)
-                    .movePointLeft(8)
-                    .stripTrailingZeros()
-                    .toPlainString();
-            String txId = liquidRpcService.sendToAddress(destinationAddress, amount);
-            invoiceEntity.setLiquidTxId(txId);
-            invoiceEntity.setStatus(LightningInvoiceStatus.LOCKUP_SENT);
-            invoiceEntity.setUpdatedAt(OffsetDateTime.now());
-            lightningInvoiceRepository.save(invoiceEntity);
-            log.info("Boltz lockup sent processId={} address={} txId={}", processId, destinationAddress, txId);
+                String amount = BigDecimal.valueOf(expectedAmount)
+                        .movePointLeft(8)
+                        .stripTrailingZeros()
+                        .toPlainString();
+                String txId = liquidRpcService.sendToAddress(destinationAddress, amount);
+                invoiceEntity.setLiquidTxId(txId);
+                invoiceEntity.setStatus(LightningInvoiceStatus.LOCKUP_SENT);
+                invoiceEntity.setUpdatedAt(OffsetDateTime.now());
+                lightningInvoiceRepository.save(invoiceEntity);
+                log.info("Boltz lockup sent processId={} address={} txId={}", processId, destinationAddress, txId);
+            } catch (RuntimeException e) {
+                return retryOrFail(processId, "Liquid lockup transaction failed", e);
+            }
         }
 
         return StepResult.waiting("Waiting for Boltz payment confirmation");
+    }
+
+    private StepResult retryOrFail(UUID processId, String detail, RuntimeException error) {
+        int retries = countRetries(processId);
+        if (retries >= MAX_RETRIES) {
+            log.warn("{} after {} retries processId={}", detail, retries, processId, error);
+            return StepResult.failed(detail + " after retries");
+        }
+        log.warn("{} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
+        return StepResult.retry(detail, RETRY_DELAY);
+    }
+
+    private int countRetries(UUID processId) {
+        return executionRepository.findByTransactionId(processId)
+                .map(execution -> execution.getHistory().stream()
+                        .filter(item -> key().equals(item.stepKey()))
+                        .filter(item -> item.status() == StepStatus.RETRY)
+                        .count())
+                .map(Long::intValue)
+                .orElse(0);
     }
 
     private String toJson(Object value) {

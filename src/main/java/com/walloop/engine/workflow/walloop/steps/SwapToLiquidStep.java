@@ -9,11 +9,12 @@ import com.walloop.engine.sideshift.SideShiftShiftStatus;
 import com.walloop.engine.sideshift.SideShiftSwapService;
 import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.WorkflowContext;
-import com.walloop.engine.workflow.WorkflowStatus;
+import com.walloop.engine.workflow.WorkflowExecutionRepository;
+import com.walloop.engine.workflow.StepStatus;
 import com.walloop.engine.workflow.WorkflowStep;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
+import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,10 @@ public class SwapToLiquidStep implements WorkflowStep {
     private final SideShiftShiftRepository shiftRepository;
     private final SideShiftPairSimulationService pairSimulationService;
     private final WithdrawRequestPublisher withdrawRequestPublisher;
+    private final WorkflowExecutionRepository executionRepository;
+
+    private static final int MAX_RETRIES = 5;
+    private static final Duration RETRY_DELAY = Duration.ofMinutes(5);
 
     @Override
     public String key() {
@@ -44,32 +49,41 @@ public class SwapToLiquidStep implements WorkflowStep {
         String refundAddress = context.require(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, String.class);
         String sessionToken = context.get(WalloopWorkflowContextKeys.SESSION_TOKEN, String.class).orElse(null);
 
-        Optional<SideShiftShiftEntity> existingShift = shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId);
-        SideShiftShiftEntity shiftEntity = existingShift.orElseGet(() -> {
-            SideShiftShiftResponse shift = sideShiftSwapService.swapToLiquid(
-                    chain,
-                    chain,
-                    liquidAddress,
-                    refundAddress,
-                    processId,
-                    sessionToken
-            );
+        SideShiftShiftEntity shiftEntity = shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
+                .orElse(null);
+        if (shiftEntity == null) {
+            try {
+                SideShiftShiftResponse shift = sideShiftSwapService.swapToLiquid(
+                        chain,
+                        chain,
+                        liquidAddress,
+                        refundAddress,
+                        processId,
+                        sessionToken
+                );
 
-            context.put(WalloopWorkflowContextKeys.SWAP_ID, shift.id());
-            context.put(WalloopWorkflowContextKeys.SWAP_DEPOSIT_ADDRESS, shift.depositAddress());
+                context.put(WalloopWorkflowContextKeys.SWAP_ID, shift.id());
+                context.put(WalloopWorkflowContextKeys.SWAP_DEPOSIT_ADDRESS, shift.depositAddress());
 
-            log.info(
-                    "SideShift swap created for processId={} depositCoin={} depositAddress={} settleCoin={} settleNetwork={}",
-                    processId,
-                    shift.depositCoin(),
-                    shift.depositAddress(),
-                    shift.settleCoin(),
-                    shift.settleNetwork()
-            );
+                log.info(
+                        "SideShift swap created for processId={} depositCoin={} depositAddress={} settleCoin={} settleNetwork={}",
+                        processId,
+                        shift.depositCoin(),
+                        shift.depositAddress(),
+                        shift.settleCoin(),
+                        shift.settleNetwork()
+                );
 
-            return shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
-                    .orElseThrow(() -> new IllegalStateException("SideShift shift not persisted for processId=" + processId));
-        });
+                shiftEntity = shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
+                        .orElse(null);
+            } catch (RuntimeException e) {
+                return retryOrFail(processId, "SideShift swap creation failed", e);
+            }
+
+            if (shiftEntity == null) {
+                return retryOrFail(processId, "SideShift shift not persisted", null);
+            }
+        }
 
         if (shiftEntity.getShiftId() != null) {
             context.put(WalloopWorkflowContextKeys.SWAP_ID, shiftEntity.getShiftId());
@@ -95,6 +109,26 @@ public class SwapToLiquidStep implements WorkflowStep {
         }
 
         return StepResult.waiting("Waiting for SideShift settlement");
+    }
+
+    private StepResult retryOrFail(UUID processId, String detail, RuntimeException error) {
+        int retries = countRetries(processId);
+        if (retries >= MAX_RETRIES) {
+            log.warn("{} after {} retries processId={}", detail, retries, processId, error);
+            return StepResult.failed(detail + " after retries");
+        }
+        log.warn("{} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
+        return StepResult.retry(detail, RETRY_DELAY);
+    }
+
+    private int countRetries(UUID processId) {
+        return executionRepository.findByTransactionId(processId)
+                .map(execution -> execution.getHistory().stream()
+                        .filter(item -> key().equals(item.stepKey()))
+                        .filter(item -> item.status() == StepStatus.RETRY)
+                        .count())
+                .map(Long::intValue)
+                .orElse(0);
     }
 }
 
