@@ -69,7 +69,7 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
     @Override
     public long calculateFee(UUID transactionId, UUID ownerId) {
         DepositWatchEntity watch = depositWatchRepository.findByProcessId(transactionId)
-                .orElseThrow(() -> new IllegalStateException("Deposit watch not found for processId=" + transactionId));
+                .orElseThrow(() -> new IllegalStateException("Deposit watch not found"));
 
         BigDecimal amountBaseUnits = parseAmountSats(watch.getLastBalance());
         String assetSymbol = resolveAssetSymbol(watch.getNetwork());

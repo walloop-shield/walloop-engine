@@ -31,10 +31,10 @@ public class SideShiftPairSimulationService {
         String toNetwork = SideShiftSwapService.SETTLE_NETWORK;
 
         DepositWatchEntity watch = depositWatchRepository.findByProcessId(processId)
-                .orElseThrow(() -> new IllegalStateException("Deposit watch not found for processId=" + processId));
+                .orElseThrow(() -> new IllegalStateException("Deposit watch not found"));
         String amount = watch.getLastBalance();
         if (amount == null || amount.isBlank()) {
-            throw new IllegalStateException("Deposit watch lastBalance not available for processId=" + processId);
+            throw new IllegalStateException("Deposit watch lastBalance not available");
         }
 
         Map<String, Object> response = client.getPair(fromCoin, toCoin, amount, fromNetwork, toNetwork);

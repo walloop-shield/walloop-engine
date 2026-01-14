@@ -122,11 +122,11 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
 
     private BalanceAmount resolveBalanceAmount(UUID processId, UUID ownerId) {
         LiquidWalletEntity wallet = liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
-                .orElseThrow(() -> new IllegalStateException("Liquid wallet not found for processId=" + processId));
+                .orElseThrow(() -> new IllegalStateException("Liquid wallet not found"));
 
         BigDecimal balanceBtc = liquidRpcService.getReceivedByAddress(wallet.getAddress());
         if (balanceBtc.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalStateException("Liquid wallet balance is empty for processId=" + processId);
+            throw new IllegalStateException("Liquid wallet balance is empty");
         }
 
         long balanceSats = balanceBtc.movePointRight(8)
