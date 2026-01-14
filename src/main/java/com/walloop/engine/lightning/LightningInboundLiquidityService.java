@@ -27,9 +27,6 @@ public class LightningInboundLiquidityService {
     private final LightningInboundLiquidityRequestRepository requestRepository;
     private final LspLiquidityService lspLiquidityService;
 
-    @Value("${walloop.lightning.inbound-target-sats:10000000}")
-    private long inboundTargetSats;
-
     @Value("${walloop.lightning.inbound-check-enabled:true}")
     private boolean inboundCheckEnabled;
 
@@ -48,13 +45,17 @@ public class LightningInboundLiquidityService {
     @Value("${walloop.lightning.lsp.api-key:}")
     private String lspApiKey;
 
-    public InboundLiquidityCheck ensureInboundLiquidity(UUID processId) {
+    public InboundLiquidityCheck ensureInboundLiquidity(UUID processId, long requiredSats) {
         if (!inboundCheckEnabled) {
             return InboundLiquidityCheck.readyCheck();
         }
 
+        if (requiredSats <= 0) {
+            return InboundLiquidityCheck.readyCheck();
+        }
+
         long inboundSats = resolveInboundSats();
-        if (inboundSats >= inboundTargetSats) {
+        if (inboundSats >= requiredSats) {
             return InboundLiquidityCheck.readyCheck();
         }
 
@@ -74,12 +75,12 @@ public class LightningInboundLiquidityService {
             );
         }
 
-        long requestedSats = Math.max(0, inboundTargetSats - inboundSats);
+        long requestedSats = Math.max(0, requiredSats - inboundSats);
         LightningInboundLiquidityRequestEntity entity = new LightningInboundLiquidityRequestEntity();
         entity.setProcessId(processId);
         entity.setProvider(provider);
         entity.setStatus(LightningInboundLiquidityRequestStatus.REQUESTED);
-        entity.setTargetInboundSats(inboundTargetSats);
+        entity.setTargetInboundSats(requiredSats);
         entity.setCurrentInboundSats(inboundSats);
         entity.setRequestedSats(requestedSats);
         entity.setCreatedAt(OffsetDateTime.now());
@@ -88,7 +89,7 @@ public class LightningInboundLiquidityService {
         LspLiquidityRequest request = new LspLiquidityRequest(
                 processId,
                 resolveNodePubKey(),
-                inboundTargetSats,
+                requiredSats,
                 inboundSats,
                 requestedSats
         );

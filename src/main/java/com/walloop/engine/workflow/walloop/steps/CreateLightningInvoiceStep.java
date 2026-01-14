@@ -30,8 +30,9 @@ public class CreateLightningInvoiceStep implements WorkflowStep {
         UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
         UUID ownerId = context.require(WalloopWorkflowContextKeys.OWNER_ID, UUID.class);
 
+        long requiredSats = lightningInvoiceService.resolveInvoiceAmountSats(processId, ownerId);
         LightningInboundLiquidityService.InboundLiquidityCheck inboundCheck =
-                inboundLiquidityService.ensureInboundLiquidity(processId);
+                inboundLiquidityService.ensureInboundLiquidity(processId, requiredSats);
         if (!inboundCheck.ready()) {
             Duration retryAfter = inboundCheck.retryAfter() != null ? inboundCheck.retryAfter() : Duration.ofMinutes(5);
             String detail = inboundCheck.detail() != null ? inboundCheck.detail() : "Waiting for inbound liquidity";

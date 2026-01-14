@@ -117,9 +117,8 @@ walloop:
     base-url: ${WALLOOP_WALLET_BASE_URL:http://localhost:8080}
   lightning:
     invoice-expiry-seconds: 7200
-    inbound-target-sats: 1000000
     inbound-check-enabled: true
-    inbound-retry-delay: PT1M
+    inbound-retry-delay: ${WALLOOP_LIGHTNING_INBOUND_RETRY_DELAY:PT1M}
     lsp:
       provider: amboss-magma
       node-pubkey: 030f0b8e9b8b047df76db393dcd9278994020dda10cc909ac294aa4aca778f25b3

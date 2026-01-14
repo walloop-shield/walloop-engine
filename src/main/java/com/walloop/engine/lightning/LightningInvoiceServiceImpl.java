@@ -41,6 +41,12 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
                 .orElseGet(() -> createInvoice(processId, ownerId));
     }
 
+    @Override
+    public long resolveInvoiceAmountSats(UUID processId, UUID ownerId) {
+        BalanceAmount amount = resolveBalanceAmount(processId, ownerId);
+        return amount.balanceSats();
+    }
+
     private String resolveInvoice(UUID processId, UUID ownerId, LightningInvoiceEntity existing) {
         if (existing.getStatus() != LightningInvoiceStatus.CREATED) {
             return existing.getInvoice();
@@ -103,6 +109,18 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     }
 
     private BalanceSnapshot buildBalanceSnapshot(UUID processId, UUID ownerId) {
+        BalanceAmount amount = resolveBalanceAmount(processId, ownerId);
+        BigDecimal balanceBtc = new BigDecimal(amount.balanceBtc());
+        BigDecimal balanceUsdt = resolveUsdtValue(processId, balanceBtc);
+        return new BalanceSnapshot(
+                amount.balanceBtc(),
+                amount.balanceSats(),
+                amount.balanceMsats(),
+                balanceUsdt.stripTrailingZeros().toPlainString()
+        );
+    }
+
+    private BalanceAmount resolveBalanceAmount(UUID processId, UUID ownerId) {
         LiquidWalletEntity wallet = liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
                 .orElseThrow(() -> new IllegalStateException("Liquid wallet not found for processId=" + processId));
 
@@ -117,13 +135,10 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
         long balanceMsats = balanceBtc.movePointRight(11)
                 .setScale(0, RoundingMode.DOWN)
                 .longValueExact();
-
-        BigDecimal balanceUsdt = resolveUsdtValue(processId, balanceBtc);
-        return new BalanceSnapshot(
+        return new BalanceAmount(
                 balanceBtc.stripTrailingZeros().toPlainString(),
                 balanceSats,
-                balanceMsats,
-                balanceUsdt.stripTrailingZeros().toPlainString()
+                balanceMsats
         );
     }
 
@@ -175,5 +190,8 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     }
 
     private record BalanceSnapshot(String balanceBtc, long balanceSats, long balanceMsats, String balanceUsdt) {
+    }
+
+    private record BalanceAmount(String balanceBtc, long balanceSats, long balanceMsats) {
     }
 }
