@@ -30,6 +30,15 @@ spring:
     username: ${RABBITMQ_USER:${RABBITMQ_USERNAME:guest}}
     password: ${RABBITMQ_PASSWORD:guest}
     virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:${RABBITMQ_VHOST:/}}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-attempts: ${WALLOOP_RABBITMQ_RETRY_MAX_ATTEMPTS:5}
+          initial-interval: ${WALLOOP_RABBITMQ_RETRY_INITIAL_INTERVAL:1000}
+          multiplier: ${WALLOOP_RABBITMQ_RETRY_MULTIPLIER:2.0}
+          max-interval: ${WALLOOP_RABBITMQ_RETRY_MAX_INTERVAL:10000}
+        default-requeue-rejected: false
 liquid:
   rpc:
     url: ${LIQUID_RPC_URL:walloop-liquid-node.internal:7041}
@@ -67,7 +76,7 @@ server:
 
 logging:
   level:
-    root: ERROR
+    root: INFO
     io.micrometer.registry.otlp: OFF
 
 management:

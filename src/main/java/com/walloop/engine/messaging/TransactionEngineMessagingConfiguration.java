@@ -10,16 +10,21 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 public class TransactionEngineMessagingConfiguration {
 
     public static final String WALLOOP_ENGINE_EXCHANGE = "walloop.engine.exchange";
+    public static final String WALLOOP_ENGINE_DEAD_LETTER_EXCHANGE = "walloop.engine.dlx";
     public static final String TRANSACTION_ENGINE_QUEUE = "transaction.engine.queue";
+    public static final String TRANSACTION_ENGINE_DLQ = "transaction.engine.dlq";
     public static final String ENGINE_INITIALIZATION_ROUTING_KEY = "engine.initialization";
+    public static final String ENGINE_INITIALIZATION_DLQ_ROUTING_KEY = "engine.initialization.dlq";
     public static final String TRANSACTION_ENGINE_LISTENER_CONTAINER_FACTORY = "transactionEngineListenerContainerFactory";
 
     @Bean
@@ -29,7 +34,12 @@ public class TransactionEngineMessagingConfiguration {
 
     @Bean
     public Queue transactionEngineQueue() {
-        return new Queue(TRANSACTION_ENGINE_QUEUE, true);
+        return new Queue(TRANSACTION_ENGINE_QUEUE, true, false, false, deadLetterArgs(ENGINE_INITIALIZATION_DLQ_ROUTING_KEY));
+    }
+
+    @Bean
+    public Queue transactionEngineDlq() {
+        return new Queue(TRANSACTION_ENGINE_DLQ, true);
     }
 
     @Bean
@@ -42,16 +52,32 @@ public class TransactionEngineMessagingConfiguration {
                 .with(ENGINE_INITIALIZATION_ROUTING_KEY);
     }
 
+    @Bean
+    public Binding transactionEngineDlqBinding(
+            @Qualifier("transactionEngineDlq") Queue transactionEngineDlq,
+            @Qualifier("walloopEngineDeadLetterExchange") DirectExchange walloopEngineDeadLetterExchange
+    ) {
+        return BindingBuilder.bind(transactionEngineDlq)
+                .to(walloopEngineDeadLetterExchange)
+                .with(ENGINE_INITIALIZATION_DLQ_ROUTING_KEY);
+    }
+
     @Bean(TRANSACTION_ENGINE_LISTENER_CONTAINER_FACTORY)
     public RabbitListenerContainerFactory<?> transactionEngineListenerContainerFactory(
             ConnectionFactory connectionFactory,
             ObjectMapper objectMapper,
-            RabbitProperties rabbitProperties
+            SimpleRabbitListenerContainerFactoryConfigurer configurer
     ) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
+        configurer.configure(factory, connectionFactory);
         factory.setMessageConverter(new Jackson2JsonMessageConverter(objectMapper));
-        factory.setAutoStartup(rabbitProperties.getListener().getSimple().isAutoStartup());
         return factory;
+    }
+
+    private Map<String, Object> deadLetterArgs(String routingKey) {
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-dead-letter-exchange", WALLOOP_ENGINE_DEAD_LETTER_EXCHANGE);
+        args.put("x-dead-letter-routing-key", routingKey);
+        return args;
     }
 }

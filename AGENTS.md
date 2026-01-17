@@ -31,6 +31,16 @@ Engine publishes (to core):
 
 Exchange/queue config:
 - `src/main/java/com/walloop/engine/messaging/*MessagingConfiguration.java`.
+- DLQ:
+  - `walloop.engine.dlx`
+  - `transaction.engine.queue` -> `transaction.engine.dlq` (routing key `engine.initialization.dlq`)
+  - `engine.deposit.queue` -> `engine.deposit.dlq` (routing key `monitor.detected.dlq`)
+  - `engine.withdraw.queue` -> `engine.withdraw.dlq` (routing key `balance.sent.dlq`)
+- Listener retry config:
+  - `spring.rabbitmq.listener.simple.retry.*` in `src/main/resources/application.yml`
+  - Env overrides: `WALLOOP_RABBITMQ_RETRY_MAX_ATTEMPTS`, `WALLOOP_RABBITMQ_RETRY_INITIAL_INTERVAL`,
+    `WALLOOP_RABBITMQ_RETRY_MULTIPLIER`, `WALLOOP_RABBITMQ_RETRY_MAX_INTERVAL`
+  - `default-requeue-rejected=false` so failures after retries go to DLQ
 
 ## External integrations
 - SideShift: `SideShift*` (swap to Liquid).

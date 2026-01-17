@@ -17,6 +17,7 @@ import com.walloop.engine.sideshift.SideShiftSwapService;
 import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.StepStatus;
 import com.walloop.engine.workflow.WorkflowContext;
+import com.walloop.engine.workflow.WorkflowExecutionRepository;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -32,6 +33,7 @@ class SwapToLiquidStepTest {
     private SideShiftShiftRepository shiftRepository;
     private SideShiftPairSimulationService pairSimulationService;
     private WithdrawRequestPublisher withdrawRequestPublisher;
+    private WorkflowExecutionRepository executionRepository;
     private SwapToLiquidStep step;
 
     @BeforeEach
@@ -40,7 +42,14 @@ class SwapToLiquidStepTest {
         shiftRepository = Mockito.mock(SideShiftShiftRepository.class);
         pairSimulationService = Mockito.mock(SideShiftPairSimulationService.class);
         withdrawRequestPublisher = Mockito.mock(WithdrawRequestPublisher.class);
-        step = new SwapToLiquidStep(sideShiftSwapService, shiftRepository, pairSimulationService, withdrawRequestPublisher);
+        executionRepository = Mockito.mock(WorkflowExecutionRepository.class);
+        step = new SwapToLiquidStep(
+                sideShiftSwapService,
+                shiftRepository,
+                pairSimulationService,
+                withdrawRequestPublisher,
+                executionRepository
+        );
     }
 
     @Test
