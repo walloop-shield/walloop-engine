@@ -18,11 +18,12 @@ public class DepositMonitoringMessagingConfiguration {
     public static final String ENGINE_DEPOSIT_DLQ = "engine.deposit.dlq";
     public static final String MONITOR_WAITING_ROUTING_KEY = "monitor.waiting";
     public static final String MONITOR_DETECTED_ROUTING_KEY = "monitor.detected";
+    public static final String MONITOR_WAITING_DLQ_ROUTING_KEY = "monitor.waiting.dlq";
     public static final String MONITOR_DETECTED_DLQ_ROUTING_KEY = "monitor.detected.dlq";
 
     @Bean
     public Queue coreDepositQueue() {
-        return new Queue(CORE_DEPOSIT_QUEUE, true);
+        return new Queue(CORE_DEPOSIT_QUEUE, true, false, false, coreDeadLetterArgs(MONITOR_WAITING_DLQ_ROUTING_KEY));
     }
 
     @Bean
@@ -68,6 +69,13 @@ public class DepositMonitoringMessagingConfiguration {
     private Map<String, Object> deadLetterArgs(String routingKey) {
         Map<String, Object> args = new HashMap<>();
         args.put("x-dead-letter-exchange", EngineMessagingConfiguration.ENGINE_DEAD_LETTER_EXCHANGE);
+        args.put("x-dead-letter-routing-key", routingKey);
+        return args;
+    }
+
+    private Map<String, Object> coreDeadLetterArgs(String routingKey) {
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-dead-letter-exchange", CoreMessagingConfiguration.CORE_DEAD_LETTER_EXCHANGE);
         args.put("x-dead-letter-routing-key", routingKey);
         return args;
     }

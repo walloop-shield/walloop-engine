@@ -23,11 +23,12 @@ public class WithdrawMessagingConfiguration {
     public static final String ENGINE_WITHDRAW_DLQ = "engine.withdraw.dlq";
     public static final String BALANCE_PROCESS_ROUTING_KEY = "balance.process";
     public static final String BALANCE_SENT_ROUTING_KEY = "balance.sent";
+    public static final String BALANCE_PROCESS_DLQ_ROUTING_KEY = "balance.process.dlq";
     public static final String BALANCE_SENT_DLQ_ROUTING_KEY = "balance.sent.dlq";
 
     @Bean
     public Queue coreWithdrawQueue() {
-        return new Queue(CORE_WITHDRAW_QUEUE, true);
+        return new Queue(CORE_WITHDRAW_QUEUE, true, false, false, coreDeadLetterArgs(BALANCE_PROCESS_DLQ_ROUTING_KEY));
     }
 
     @Bean
@@ -81,6 +82,13 @@ public class WithdrawMessagingConfiguration {
     private Map<String, Object> deadLetterArgs(String routingKey) {
         Map<String, Object> args = new HashMap<>();
         args.put("x-dead-letter-exchange", EngineMessagingConfiguration.ENGINE_DEAD_LETTER_EXCHANGE);
+        args.put("x-dead-letter-routing-key", routingKey);
+        return args;
+    }
+
+    private Map<String, Object> coreDeadLetterArgs(String routingKey) {
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-dead-letter-exchange", CoreMessagingConfiguration.CORE_DEAD_LETTER_EXCHANGE);
         args.put("x-dead-letter-routing-key", routingKey);
         return args;
     }
