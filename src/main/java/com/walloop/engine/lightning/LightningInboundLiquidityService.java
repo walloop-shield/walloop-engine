@@ -33,6 +33,15 @@ public class LightningInboundLiquidityService {
     @Value("${walloop.lightning.inbound-retry-delay:5m}")
     private Duration retryDelay;
 
+    @Value("${walloop.lightning.inbound-target-sats:1000000}")
+    private long targetInboundSats;
+
+    @Value("${walloop.lightning.inbound-min-sats:100000}")
+    private long minInboundSats;
+
+    @Value("${walloop.lightning.inbound-request-cooldown:360m}")
+    private Duration requestCooldown;
+
     @Value("${walloop.lightning.lsp.provider:amboss-magma}")
     private String provider;
 
@@ -59,11 +68,19 @@ public class LightningInboundLiquidityService {
             return InboundLiquidityCheck.readyCheck();
         }
 
-        Optional<LightningInboundLiquidityRequestEntity> pending = requestRepository
-                .findFirstByProcessIdAndStatusInOrderByCreatedAtDesc(processId, PENDING_STATUSES);
-        if (pending.isPresent()) {
+        boolean shouldRequest = inboundSats < minInboundSats || inboundSats < requiredSats;
+        if (!shouldRequest) {
+            return InboundLiquidityCheck.readyCheck();
+        }
+
+        Optional<LightningInboundLiquidityRequestEntity> recentPending = requestRepository
+                .findFirstByStatusInAndCreatedAtAfterOrderByCreatedAtDesc(
+                        PENDING_STATUSES,
+                        OffsetDateTime.now().minus(requestCooldown)
+                );
+        if (recentPending.isPresent()) {
             return InboundLiquidityCheck.retryCheck(
-                    "Waiting for inbound liquidity",
+                    "Inbound liquidity request recently submitted",
                     retryDelay
             );
         }
@@ -75,12 +92,13 @@ public class LightningInboundLiquidityService {
             );
         }
 
-        long requestedSats = Math.max(0, requiredSats - inboundSats);
+        long targetSats = Math.max(targetInboundSats, requiredSats);
+        long requestedSats = Math.max(0, targetSats - inboundSats);
         LightningInboundLiquidityRequestEntity entity = new LightningInboundLiquidityRequestEntity();
         entity.setProcessId(processId);
         entity.setProvider(provider);
         entity.setStatus(LightningInboundLiquidityRequestStatus.REQUESTED);
-        entity.setTargetInboundSats(requiredSats);
+        entity.setTargetInboundSats(targetSats);
         entity.setCurrentInboundSats(inboundSats);
         entity.setRequestedSats(requestedSats);
         entity.setCreatedAt(OffsetDateTime.now());
@@ -89,7 +107,7 @@ public class LightningInboundLiquidityService {
         LspLiquidityRequest request = new LspLiquidityRequest(
                 processId,
                 resolveNodePubKey(),
-                requiredSats,
+                targetSats,
                 inboundSats,
                 requestedSats
         );

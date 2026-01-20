@@ -12,4 +12,9 @@ public interface LightningInboundLiquidityRequestRepository
             UUID processId,
             List<LightningInboundLiquidityRequestStatus> statuses
     );
+
+    Optional<LightningInboundLiquidityRequestEntity> findFirstByStatusInAndCreatedAtAfterOrderByCreatedAtDesc(
+            List<LightningInboundLiquidityRequestStatus> statuses,
+            java.time.OffsetDateTime createdAt
+    );
 }
