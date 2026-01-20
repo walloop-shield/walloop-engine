@@ -2,6 +2,7 @@ package com.walloop.engine.sideshift;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walloop.engine.network.NetworkAssetService;
 import com.walloop.engine.onboarding.LoginSessionEntity;
 import com.walloop.engine.onboarding.LoginSessionRepository;
 import java.time.OffsetDateTime;
@@ -22,6 +23,7 @@ public class SideShiftSwapService {
     private final SideShiftStatusScheduler statusScheduler;
     private final ObjectMapper objectMapper;
     private final LoginSessionRepository loginSessionRepository;
+    private final NetworkAssetService networkAssetService;
 
     public SideShiftShiftResponse swapToLiquid(
             String depositCoin,
@@ -36,8 +38,9 @@ public class SideShiftSwapService {
             throw new IllegalStateException("SideShift secret is not configured");
         }
         String userIp = resolveUserIp(sessionToken);
+        String mainAsset = networkAssetService.requireMainAsset(depositCoin);
         SideShiftCreateVariableShiftRequest request = SideShiftCreateVariableShiftRequest.builder()
-                .depositCoin(depositCoin.toLowerCase())
+                .depositCoin(mainAsset.toLowerCase())
                 .depositNetwork(depositNetwork.toLowerCase())
                 .settleCoin(SETTLE_COIN)
                 .settleNetwork(SETTLE_NETWORK)

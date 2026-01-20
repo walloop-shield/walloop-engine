@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walloop.engine.core.DepositWatchEntity;
 import com.walloop.engine.core.DepositWatchRepository;
+import com.walloop.engine.network.NetworkAssetService;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -19,14 +20,15 @@ public class SideShiftPairSimulationService {
     private final SideShiftPairSimulationRepository repository;
     private final ObjectMapper objectMapper;
     private final DepositWatchRepository depositWatchRepository;
+    private final NetworkAssetService networkAssetService;
 
-    public void ensureSimulation(UUID processId, String depositCoin, String depositNetwork) {
+    public void ensureSimulation(UUID processId, String network, String depositNetwork) {
         if (repository.findFirstByProcessIdOrderByCreatedAtDesc(processId).isPresent()) {
             return;
         }
 
-        String fromCoin = depositCoin;
-        String fromNetwork = depositNetwork;
+        String fromCoin = networkAssetService.requireMainAsset(network).toLowerCase();
+        String fromNetwork = depositNetwork.toLowerCase();
         String toCoin = SideShiftSwapService.SETTLE_COIN;
         String toNetwork = SideShiftSwapService.SETTLE_NETWORK;
 
@@ -37,7 +39,16 @@ public class SideShiftPairSimulationService {
             throw new IllegalStateException("Deposit watch lastBalance not available");
         }
 
-        Map<String, Object> response = client.getPair(fromCoin, toCoin, amount, fromNetwork, toNetwork);
+        String secret = properties.getSecret();
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("SideShift secret is not configured");
+        }
+        String affiliateId = properties.getAffiliateId();
+        if (affiliateId == null || affiliateId.isBlank()) {
+            throw new IllegalStateException("SideShift affiliateId is not configured");
+        }
+
+        Map<String, Object> response = client.getPair(secret, affiliateId, fromCoin, toCoin);
 
         SideShiftPairSimulationEntity entity = new SideShiftPairSimulationEntity();
         entity.setProcessId(processId);
@@ -55,11 +66,9 @@ public class SideShiftPairSimulationService {
         entity.setDepositNetwork(asString(response.get("depositNetwork")));
         entity.setSettleNetwork(asString(response.get("settleNetwork")));
         entity.setRequestPayload(toJson(Map.of(
+                "affiliateId", affiliateId,
                 "from", fromCoin,
-                "to", toCoin,
-                "amount", amount,
-                "depositNetwork", fromNetwork,
-                "settleNetwork", toNetwork
+                "to", toCoin
         )));
         entity.setCreatedAt(OffsetDateTime.now());
         repository.save(entity);

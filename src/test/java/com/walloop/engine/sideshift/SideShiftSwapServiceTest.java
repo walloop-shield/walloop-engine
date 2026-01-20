@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walloop.engine.network.NetworkAssetService;
 import com.walloop.engine.onboarding.LoginSessionEntity;
 import com.walloop.engine.onboarding.LoginSessionRepository;
 import java.util.Optional;
@@ -22,6 +23,7 @@ class SideShiftSwapServiceTest {
         SideShiftShiftRepository shiftRepository = Mockito.mock(SideShiftShiftRepository.class);
         LoginSessionRepository loginSessionRepository = Mockito.mock(LoginSessionRepository.class);
         SideShiftStatusScheduler statusScheduler = Mockito.mock(SideShiftStatusScheduler.class);
+        NetworkAssetService networkAssetService = Mockito.mock(NetworkAssetService.class);
 
         SideShiftProperties properties = new SideShiftProperties();
         properties.setSecret("secret");
@@ -34,13 +36,15 @@ class SideShiftSwapServiceTest {
                 shiftRepository,
                 statusScheduler,
                 objectMapper,
-                loginSessionRepository
+                loginSessionRepository,
+                networkAssetService
         );
 
         LoginSessionEntity session = new LoginSessionEntity();
         session.setSessionToken("token-123");
         session.setIpAddress("1.2.3.4");
         when(loginSessionRepository.findBySessionToken("token-123")).thenReturn(Optional.of(session));
+        when(networkAssetService.requireMainAsset("btc")).thenReturn("BTC");
 
         SideShiftShiftResponse response = new SideShiftShiftResponse(
                 "shift-1",

@@ -18,13 +18,12 @@ public interface SideShiftClient {
             @RequestBody SideShiftCreateVariableShiftRequest request
     );
 
-    @GetMapping("/pair")
+    @GetMapping("/pair/{from}/{to}")
     java.util.Map<String, Object> getPair(
-            @RequestParam("from") String from,
-            @RequestParam("to") String to,
-            @RequestParam("amount") String amount,
-            @RequestParam(value = "depositNetwork", required = false) String depositNetwork,
-            @RequestParam(value = "settleNetwork", required = false) String settleNetwork
+            @org.springframework.web.bind.annotation.RequestHeader("x-sideshift-secret") String secret,
+            @RequestParam("affiliateId") String affiliateId,
+            @PathVariable("from") String from,
+            @PathVariable("to") String to
     );
 
     @GetMapping("/shifts/{shiftId}")
