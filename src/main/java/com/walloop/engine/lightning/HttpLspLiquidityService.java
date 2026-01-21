@@ -6,6 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lightningj.lnd.wrapper.SynchronousLndAPI;
+import org.lightningj.lnd.wrapper.StatusException;
+import org.lightningj.lnd.wrapper.ValidationException;
+import org.lightningj.lnd.wrapper.message.LightningAddress;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
@@ -21,18 +25,18 @@ public class HttpLspLiquidityService implements LspLiquidityService {
     private static final String OFFER_RECOMMENDATIONS_QUERY =
             "query($channelSize: Float!, $offerType: MarketOfferType) {"
                     + " getOfferRecommendations(channelSize: $channelSize, offerType: $offerType) {"
-                    + " list { id min_size max_size status offer_type }"
+                    + " list { id min_size max_size status offer_type account }"
                     + " }"
                     + " }";
     private static final String CREATE_ORDER_MUTATION =
             "mutation($offer: String!, $size: Float!, $pubkey: String, $paymentMethod: OrderPaymentMethod) {"
                     + " createOrder(input: { offer: $offer, size: $size, pubkey: $pubkey, payment_method: $paymentMethod })"
-                    + " { id orderId }"
                     + " }";
 
     private static final String LSP_GRAPHQL_PATH = "/graphql";
 
     private final ObjectMapper objectMapper;
+    private final SynchronousLndAPI lndApi;
 
     @Value("${walloop.lightning.lsp.base-url:}")
     private String baseUrl;
@@ -56,21 +60,25 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         offerVariables.put("channelSize", (double) request.requestedSats());
         offerVariables.put("offerType", "CHANNEL");
         String offerResponse = executeGraphql(client, endpoint, OFFER_RECOMMENDATIONS_QUERY, offerVariables);
-        String offerId = extractOfferId(offerResponse, request.requestedSats());
-        if (offerId == null || offerId.isBlank()) {
+        OfferSelection offerSelection = selectOffer(offerResponse, request.requestedSats());
+        if (offerSelection == null || offerSelection.id() == null || offerSelection.id().isBlank()) {
             throw new IllegalStateException("LSP offer recommendation not found");
+        }
+        boolean connected = connectToOfferNode(client, endpoint, offerSelection);
+        if (!connected) {
+            throw new IllegalStateException("Failed to connect to LSP offer node");
         }
 
         Map<String, Object> orderVariables = new HashMap<>();
-        orderVariables.put("offer", offerId);
+        orderVariables.put("offer", offerSelection.id());
         orderVariables.put("size", (double) request.requestedSats());
         orderVariables.put("pubkey", request.nodePubKey());
-        orderVariables.put("paymentMethod", "USD");
+        orderVariables.put("paymentMethod", "AMBUCKS");
         String orderResponse = executeGraphql(client, endpoint, CREATE_ORDER_MUTATION, orderVariables);
 
         String externalId = extractOrderId(orderResponse);
         if (externalId == null || externalId.isBlank()) {
-            externalId = offerId;
+            externalId = offerSelection.id();
         }
 
         Map<String, Object> payload = new HashMap<>();
@@ -97,7 +105,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
                 .body(String.class);
     }
 
-    private String extractOfferId(String response, long requestedSats) {
+    private OfferSelection selectOffer(String response, long requestedSats) {
         if (response == null || response.isBlank()) {
             return null;
         }
@@ -122,7 +130,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
                         continue;
                     }
                     Object status = itemMap.get("status");
-                    if (status == null || !"AVAILABLE".equalsIgnoreCase(status.toString())) {
+                    if (status == null || !"ENABLED".equalsIgnoreCase(status.toString())) {
                         continue;
                     }
                     Long minSize = parseLong(itemMap.get("min_size"));
@@ -133,9 +141,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
                     if (maxSize != null && requestedSats > maxSize) {
                         continue;
                     }
-                    if (id != null) {
-                        return id.toString();
-                    }
+                    return new OfferSelection(id.toString(), asString(itemMap.get("account")));
                 }
             }
         } catch (Exception e) {
@@ -157,6 +163,104 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    private boolean connectToOfferNode(RestClient client, String endpoint, OfferSelection offerSelection) {
+        String account = offerSelection.account();
+        if (account == null || account.isBlank()) {
+            log.warn("LSP offer missing account for connect. offerId={}", offerSelection.id());
+            return false;
+        }
+
+        String pubkey = account;
+        if (account.contains("@")) {
+            pubkey = account.split("@", 2)[0];
+        }
+
+        String host = resolveNodeHost(client, endpoint, pubkey);
+
+        if (host == null || host.isBlank()) {
+            log.warn("Unable to resolve LSP offer node address. offerId={} pubkey={}", offerSelection.id(), pubkey);
+            return false;
+        }
+
+        LightningAddress address = new LightningAddress();
+        address.setPubkey(pubkey);
+        address.setHost(host);
+        try {
+            lndApi.connectPeer(address, false, null);
+            log.info("Connected to LSP offer node. offerId={} address={}", offerSelection.id(), pubkey + "@" + host);
+            return true;
+        } catch (StatusException | ValidationException e) {
+            log.warn("Failed to connect to LSP offer node. offerId={} address={}", offerSelection.id(), pubkey + "@" + host, e);
+            return false;
+        }
+    }
+
+    private String resolveNodeHost(RestClient client, String endpoint, String pubkey) {
+        String response = executeGraphqlSafely(client, endpoint, nodeQuery(), Map.of("pubkey", pubkey));
+        if (response == null || response.isBlank()) {
+            return null;
+        }
+        try {
+            Map<String, Object> payload = objectMapper.readValue(response, new TypeReference<>() {});
+            Object data = payload.get("data");
+            if (!(data instanceof Map<?, ?> dataMap)) {
+                return null;
+            }
+            Object node = dataMap.get("getNode");
+            if (!(node instanceof Map<?, ?> nodeMap)) {
+                return null;
+            }
+            Object graphInfo = nodeMap.get("graph_info");
+            if (!(graphInfo instanceof Map<?, ?> graphInfoMap)) {
+                return null;
+            }
+            Object graphNode = graphInfoMap.get("node");
+            if (!(graphNode instanceof Map<?, ?> graphNodeMap)) {
+                return null;
+            }
+            Object addresses = graphNodeMap.get("addresses");
+            if (addresses instanceof Iterable<?> list) {
+                for (Object item : list) {
+                    if (item instanceof Map<?, ?> addrMap) {
+                        String addr = asString(addrMap.get("addr"));
+                        if (addr == null || addr.isBlank()) {
+                            addr = asString(addrMap.get("address"));
+                        }
+                        if (addr != null && addr.contains(":")) {
+                            return addr;
+                        }
+                    } else if (item instanceof String addr && addr.contains(":")) {
+                        return addr;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
+    }
+
+    private String executeGraphqlSafely(RestClient client, String endpoint, String query, Map<String, Object> variables) {
+        try {
+            return executeGraphql(client, endpoint, query, variables);
+        } catch (Exception e) {
+            log.warn("Failed to execute LSP GraphQL query for node lookup", e);
+            return null;
+        }
+    }
+
+    private String nodeQuery() {
+        return "query($pubkey: String!) {"
+                + " getNode(pubkey: $pubkey) {"
+                + " graph_info { node { addresses { addr network } } }"
+                + " }"
+                + " }";
+    }
+
+    private String asString(Object value) {
+        return value == null ? null : value.toString();
     }
 
     private String extractOrderId(String response) {
@@ -217,5 +321,8 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         }
         String trimmed = normalizedBase.endsWith("/") ? normalizedBase.substring(0, normalizedBase.length() - 1) : normalizedBase;
         return trimmed + LSP_GRAPHQL_PATH;
+    }
+
+    private record OfferSelection(String id, String account) {
     }
 }
