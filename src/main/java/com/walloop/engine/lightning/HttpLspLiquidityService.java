@@ -20,7 +20,9 @@ public class HttpLspLiquidityService implements LspLiquidityService {
 
     private static final String OFFER_RECOMMENDATIONS_QUERY =
             "query($channelSize: Float!, $offerType: MarketOfferType) {"
-                    + " getOfferRecommendations(channelSize: $channelSize, offerType: $offerType) { id }"
+                    + " getOfferRecommendations(channelSize: $channelSize, offerType: $offerType) {"
+                    + " list { id }"
+                    + " }"
                     + " }";
     private static final String CREATE_ORDER_MUTATION =
             "mutation($offer: String!, $size: Float!, $pubkey: String, $paymentMethod: OrderPaymentMethod) {"
@@ -96,7 +98,35 @@ public class HttpLspLiquidityService implements LspLiquidityService {
     }
 
     private String extractOfferId(String response) {
-        return extractFirstId(response, "getOfferRecommendations");
+        if (response == null || response.isBlank()) {
+            return null;
+        }
+        try {
+            Map<String, Object> payload = objectMapper.readValue(response, new TypeReference<>() {});
+            Object data = payload.get("data");
+            if (!(data instanceof Map<?, ?> dataMap)) {
+                return null;
+            }
+            Object node = dataMap.get("getOfferRecommendations");
+            if (!(node instanceof Map<?, ?> nodeMap)) {
+                return null;
+            }
+            Object offers = nodeMap.get("list");
+            if (!(offers instanceof Iterable<?> offerList)) {
+                return null;
+            }
+            for (Object item : offerList) {
+                if (item instanceof Map<?, ?> itemMap) {
+                    Object id = itemMap.get("id");
+                    if (id != null) {
+                        return id.toString();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 
     private String extractOrderId(String response) {
@@ -119,7 +149,9 @@ public class HttpLspLiquidityService implements LspLiquidityService {
                 if (id == null) {
                     id = nodeMap.get("orderId");
                 }
-                return id == null ? null : id.toString();
+                if (id != null) {
+                    return id.toString();
+                }
             }
             if (node instanceof Iterable<?> iterable) {
                 for (Object item : iterable) {

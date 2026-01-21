@@ -91,7 +91,27 @@ public class LiquidRpcService {
         if (result == null) {
             throw new IllegalStateException("Liquid RPC balance not available for address=" + address);
         }
+        if (result instanceof Map<?, ?> mapResult) {
+            Object value = resolveAssetBalance(mapResult);
+            if (value == null) {
+                throw new IllegalStateException("Liquid RPC balance missing bitcoin asset for address=" + address);
+            }
+            return new BigDecimal(value.toString());
+        }
         return new BigDecimal(result.toString());
+    }
+
+    private Object resolveAssetBalance(Map<?, ?> mapResult) {
+        if (mapResult.containsKey("bitcoin")) {
+            return mapResult.get("bitcoin");
+        }
+        if (mapResult.containsKey("lbtc")) {
+            return mapResult.get("lbtc");
+        }
+        if (mapResult.containsKey("l-btc")) {
+            return mapResult.get("l-btc");
+        }
+        return null;
     }
 
     public Object decodeRawTransaction(String hex) {
