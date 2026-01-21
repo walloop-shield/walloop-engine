@@ -21,7 +21,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
     private static final String OFFER_RECOMMENDATIONS_QUERY =
             "query($channelSize: Float!, $offerType: MarketOfferType) {"
                     + " getOfferRecommendations(channelSize: $channelSize, offerType: $offerType) {"
-                    + " list { id }"
+                    + " list { id min_size max_size status offer_type }"
                     + " }"
                     + " }";
     private static final String CREATE_ORDER_MUTATION =
@@ -56,7 +56,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         offerVariables.put("channelSize", (double) request.requestedSats());
         offerVariables.put("offerType", "CHANNEL");
         String offerResponse = executeGraphql(client, endpoint, OFFER_RECOMMENDATIONS_QUERY, offerVariables);
-        String offerId = extractOfferId(offerResponse);
+        String offerId = extractOfferId(offerResponse, request.requestedSats());
         if (offerId == null || offerId.isBlank()) {
             throw new IllegalStateException("LSP offer recommendation not found");
         }
@@ -97,7 +97,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
                 .body(String.class);
     }
 
-    private String extractOfferId(String response) {
+    private String extractOfferId(String response, long requestedSats) {
         if (response == null || response.isBlank()) {
             return null;
         }
@@ -118,6 +118,21 @@ public class HttpLspLiquidityService implements LspLiquidityService {
             for (Object item : offerList) {
                 if (item instanceof Map<?, ?> itemMap) {
                     Object id = itemMap.get("id");
+                    if (id == null) {
+                        continue;
+                    }
+                    Object status = itemMap.get("status");
+                    if (status == null || !"AVAILABLE".equalsIgnoreCase(status.toString())) {
+                        continue;
+                    }
+                    Long minSize = parseLong(itemMap.get("min_size"));
+                    Long maxSize = parseLong(itemMap.get("max_size"));
+                    if (minSize != null && requestedSats < minSize) {
+                        continue;
+                    }
+                    if (maxSize != null && requestedSats > maxSize) {
+                        continue;
+                    }
                     if (id != null) {
                         return id.toString();
                     }
@@ -127,6 +142,21 @@ public class HttpLspLiquidityService implements LspLiquidityService {
             return null;
         }
         return null;
+    }
+
+    private Long parseLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString();
+        if (text.isBlank()) {
+            return null;
+        }
+        try {
+            return new java.math.BigDecimal(text.trim()).longValue();
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private String extractOrderId(String response) {
