@@ -41,6 +41,9 @@ public class LightningInboundLiquidityRequestEntity {
     @Column
     private String externalId;
 
+    @Column
+    private String nodeAddress;
+
     @Column(columnDefinition = "TEXT")
     private String responsePayload;
 
@@ -115,6 +118,14 @@ public class LightningInboundLiquidityRequestEntity {
 
     public void setExternalId(String externalId) {
         this.externalId = externalId;
+    }
+
+    public String getNodeAddress() {
+        return nodeAddress;
+    }
+
+    public void setNodeAddress(String nodeAddress) {
+        this.nodeAddress = nodeAddress;
     }
 
     public String getResponsePayload() {

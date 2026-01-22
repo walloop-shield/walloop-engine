@@ -64,8 +64,8 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         if (offerSelection == null || offerSelection.id() == null || offerSelection.id().isBlank()) {
             throw new IllegalStateException("LSP offer recommendation not found");
         }
-        boolean connected = connectToOfferNode(client, endpoint, offerSelection);
-        if (!connected) {
+        String nodeAddress = connectToOfferNode(client, endpoint, offerSelection);
+        if (nodeAddress == null || nodeAddress.isBlank()) {
             throw new IllegalStateException("Failed to connect to LSP offer node");
         }
 
@@ -87,7 +87,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
 
         String responsePayload = serializePayload(payload);
         log.info("LSP order requested processId={} externalId={}", request.processId(), externalId);
-        return new LspLiquidityResponse(externalId, responsePayload);
+        return new LspLiquidityResponse(externalId, responsePayload, nodeAddress);
     }
 
     private String executeGraphql(RestClient client, String endpoint, String query, Map<String, Object> variables) {
@@ -165,11 +165,11 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         }
     }
 
-    private boolean connectToOfferNode(RestClient client, String endpoint, OfferSelection offerSelection) {
+    private String connectToOfferNode(RestClient client, String endpoint, OfferSelection offerSelection) {
         String account = offerSelection.account();
         if (account == null || account.isBlank()) {
             log.warn("LSP offer missing account for connect. offerId={}", offerSelection.id());
-            return false;
+            return null;
         }
 
         String pubkey = account;
@@ -181,7 +181,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
 
         if (host == null || host.isBlank()) {
             log.warn("Unable to resolve LSP offer node address. offerId={} pubkey={}", offerSelection.id(), pubkey);
-            return false;
+            return null;
         }
 
         LightningAddress address = new LightningAddress();
@@ -189,11 +189,12 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         address.setHost(host);
         try {
             lndApi.connectPeer(address, false, null);
-            log.info("Connected to LSP offer node. offerId={} address={}", offerSelection.id(), pubkey + "@" + host);
-            return true;
+            String nodeAddress = pubkey + "@" + host;
+            log.info("Connected to LSP offer node. offerId={} address={}", offerSelection.id(), nodeAddress);
+            return nodeAddress;
         } catch (StatusException | ValidationException e) {
             log.warn("Failed to connect to LSP offer node. offerId={} address={}", offerSelection.id(), pubkey + "@" + host, e);
-            return false;
+            return null;
         }
     }
 

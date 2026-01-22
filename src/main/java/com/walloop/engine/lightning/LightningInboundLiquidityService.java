@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class LightningInboundLiquidityService {
 
-    private static final List<LightningInboundLiquidityRequestStatus> PENDING_STATUSES =
+    private static final List<LightningInboundLiquidityRequestStatus> REQUESTED_STATUSES =
             List.of(LightningInboundLiquidityRequestStatus.REQUESTED);
 
     private final SynchronousLndAPI lndApi;
@@ -74,8 +74,9 @@ public class LightningInboundLiquidityService {
         }
 
         Optional<LightningInboundLiquidityRequestEntity> recentPending = requestRepository
-                .findFirstByStatusInAndCreatedAtAfterOrderByCreatedAtDesc(
-                        PENDING_STATUSES,
+                .findFirstByProviderAndStatusInAndCreatedAtAfterOrderByCreatedAtDesc(
+                        provider,
+                        REQUESTED_STATUSES,
                         OffsetDateTime.now().minus(requestCooldown)
                 );
         if (recentPending.isPresent()) {
@@ -116,6 +117,7 @@ public class LightningInboundLiquidityService {
             LspLiquidityResponse response = lspLiquidityService.requestInboundLiquidity(request);
             entity.setExternalId(response.externalId());
             entity.setResponsePayload(response.responsePayload());
+            entity.setNodeAddress(response.nodeAddress());
         } catch (Exception e) {
             entity.setStatus(LightningInboundLiquidityRequestStatus.FAILED);
             entity.setErrorMessage(e.getMessage());
