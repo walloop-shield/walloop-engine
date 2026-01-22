@@ -25,7 +25,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
     private static final String OFFER_RECOMMENDATIONS_QUERY =
             "query($channelSize: Float!, $offerType: MarketOfferType) {"
                     + " getOfferRecommendations(channelSize: $channelSize, offerType: $offerType) {"
-                    + " list { id min_size max_size status offer_type account }"
+                    + " list { id min_size max_size status offer_type account min_block_length fee_rate base_fee }"
                     + " }"
                     + " }";
     private static final String CREATE_ORDER_MUTATION =
@@ -123,6 +123,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
             if (!(offers instanceof Iterable<?> offerList)) {
                 return null;
             }
+            OfferSelection best = null;
             for (Object item : offerList) {
                 if (item instanceof Map<?, ?> itemMap) {
                     Object id = itemMap.get("id");
@@ -141,13 +142,24 @@ public class HttpLspLiquidityService implements LspLiquidityService {
                     if (maxSize != null && requestedSats > maxSize) {
                         continue;
                     }
-                    return new OfferSelection(id.toString(), asString(itemMap.get("account")));
+                    OfferSelection candidate = new OfferSelection(
+                            id.toString(),
+                            asString(itemMap.get("account")),
+                            parseLong(itemMap.get("min_block_length")),
+                            parseDouble(itemMap.get("fee_rate")),
+                            parseDouble(itemMap.get("base_fee"))
+                    );
+                    if (best == null) {
+                        best = candidate;
+                        continue;
+                    }
+                    best = selectPreferredOffer(best, candidate);
                 }
             }
+            return best;
         } catch (Exception e) {
             return null;
         }
-        return null;
     }
 
     private Long parseLong(Object value) {
@@ -243,6 +255,48 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         return null;
     }
 
+    private Double parseDouble(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString();
+        if (text.isBlank()) {
+            return null;
+        }
+        try {
+            return new java.math.BigDecimal(text.trim()).doubleValue();
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private OfferSelection selectPreferredOffer(OfferSelection current, OfferSelection candidate) {
+        long currentMinBlocks = current.minBlockLength() == null ? 0 : current.minBlockLength();
+        long candidateMinBlocks = candidate.minBlockLength() == null ? 0 : candidate.minBlockLength();
+        if (candidateMinBlocks > currentMinBlocks) {
+            return candidate;
+        }
+        if (candidateMinBlocks < currentMinBlocks) {
+            return current;
+        }
+
+        double currentFeeRate = current.feeRate() == null ? Double.MAX_VALUE : current.feeRate();
+        double candidateFeeRate = candidate.feeRate() == null ? Double.MAX_VALUE : candidate.feeRate();
+        if (candidateFeeRate < currentFeeRate) {
+            return candidate;
+        }
+        if (candidateFeeRate > currentFeeRate) {
+            return current;
+        }
+
+        double currentBaseFee = current.baseFee() == null ? Double.MAX_VALUE : current.baseFee();
+        double candidateBaseFee = candidate.baseFee() == null ? Double.MAX_VALUE : candidate.baseFee();
+        if (candidateBaseFee < currentBaseFee) {
+            return candidate;
+        }
+        return current;
+    }
+
     private String executeGraphqlSafely(RestClient client, String endpoint, String query, Map<String, Object> variables) {
         try {
             return executeGraphql(client, endpoint, query, variables);
@@ -324,6 +378,12 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         return trimmed + LSP_GRAPHQL_PATH;
     }
 
-    private record OfferSelection(String id, String account) {
+    private record OfferSelection(
+            String id,
+            String account,
+            Long minBlockLength,
+            Double feeRate,
+            Double baseFee
+    ) {
     }
 }
