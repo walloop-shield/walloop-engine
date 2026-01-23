@@ -68,12 +68,20 @@ public class PayLiquidToLightningStep implements WorkflowStep {
             return StepResult.completed("Lightning payment confirmed by Boltz");
         }
 
+        LiquidWalletEntity wallet = null;
+        if (invoiceEntity.getBoltzSwapId() == null || invoiceEntity.getLiquidTxId() == null) {
+            wallet = liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
+                    .orElseThrow(() -> new IllegalStateException("Liquid wallet not found for processId=" + processId));
+        }
+
         if (invoiceEntity.getBoltzSwapId() == null) {
             try {
+                String refundPubKey = resolveRefundPublicKey(wallet);
                 BoltzSubmarineRequest request = BoltzSubmarineRequest.builder()
                         .from(BOLTZ_FROM_ASSET)
                         .to(BOLTZ_TO_ASSET)
                         .invoice(invoice)
+                        .refundPublicKey(refundPubKey)
                         .build();
                 BoltzSubmarineResponse response = boltzClient.createSubmarineSwap(request);
                 if (response == null || response.id() == null || response.id().isBlank()) {
@@ -93,9 +101,6 @@ public class PayLiquidToLightningStep implements WorkflowStep {
         }
 
         if (invoiceEntity.getLiquidTxId() == null) {
-            LiquidWalletEntity wallet = liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
-                    .orElseThrow(() -> new IllegalStateException("Liquid wallet not found for processId=" + processId));
-
             String destinationAddress = invoiceEntity.getBoltzLockupAddress();
             Long expectedAmount = invoiceEntity.getBoltzExpectedAmount();
             if (destinationAddress == null || destinationAddress.isBlank() || expectedAmount == null) {
@@ -123,6 +128,13 @@ public class PayLiquidToLightningStep implements WorkflowStep {
         }
 
         return StepResult.waiting("Waiting for Boltz payment confirmation");
+    }
+
+    private String resolveRefundPublicKey(LiquidWalletEntity wallet) {
+        if (wallet.getPrivateKey() != null && !wallet.getPrivateKey().isBlank()) {
+            liquidRpcService.importPrivateKey(wallet.getPrivateKey(), "walloop", false);
+        }
+        return liquidRpcService.getAddressPubKey(wallet.getAddress());
     }
 
     private StepResult retryOrFail(UUID processId, String detail, RuntimeException error) {

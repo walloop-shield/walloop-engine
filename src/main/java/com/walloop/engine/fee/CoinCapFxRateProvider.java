@@ -20,15 +20,15 @@ import org.springframework.web.client.RestClient;
 @Slf4j
 public class CoinCapFxRateProvider implements FxRateProvider {
 
-    private static final String ASSET_ENDPOINT = "/v2/assets/{id}";
-    private static final String RATE_ENDPOINT = "/v2/rates/{id}";
+    private static final String ASSET_ENDPOINT = "/assets/{id}";
+    private static final String RATE_ENDPOINT = "/rates/{id}";
 
     private final ObjectMapper objectMapper;
 
-    @Value("${walloop.fee.coincap.base-url:https://api.coincap.io}")
+    @Value("${walloop.fee.coincap.base-url}")
     private String baseUrl;
 
-    @Value("${walloop.fee.coincap.api-key:}")
+    @Value("${walloop.fee.coincap.api-key}")
     private String apiKey;
 
     @Value("${walloop.fee.coincap.usd-brl-rate-id:brazilian-real}")

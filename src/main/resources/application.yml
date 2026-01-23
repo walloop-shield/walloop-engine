@@ -142,6 +142,6 @@ walloop:
     rate-provider:
       type: coincap
     coincap:
-      base-url: ${COINCAP_BASE_URL:https://api.coincap.io}
+      base-url: ${COINCAP_BASE_URL:https://rest.coincap.io/v3}
       api-key: ${WALLOOP_FEE_COINCAP_API_KEY:}
       usd-brl-rate-id: brazilian-real

@@ -101,6 +101,62 @@ public class LiquidRpcService {
         return new BigDecimal(result.toString());
     }
 
+    public long estimateFeeSats(int confTarget, int vbytes) {
+        LiquidRpcRequest request = LiquidRpcRequest.builder()
+                .method("estimatesmartfee")
+                .params(java.util.List.of(confTarget))
+                .build();
+
+        LiquidRpcResponse<Object> response = client.call(request);
+        if (response.getError() != null) {
+            throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
+        }
+        Object result = response.getResult();
+        if (!(result instanceof Map<?, ?> mapResult)) {
+            throw new IllegalStateException("Liquid RPC result missing for estimatesmartfee");
+        }
+        Object feeRate = mapResult.get("feerate");
+        if (feeRate == null) {
+            throw new IllegalStateException("Liquid RPC feerate missing for estimatesmartfee");
+        }
+        BigDecimal rateBtcPerKb;
+        try {
+            rateBtcPerKb = new BigDecimal(feeRate.toString());
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("Liquid RPC feerate invalid for estimatesmartfee");
+        }
+        if (rateBtcPerKb.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Liquid RPC feerate invalid for estimatesmartfee");
+        }
+
+        BigDecimal satsPerVb = rateBtcPerKb
+                .multiply(BigDecimal.valueOf(100_000_000L))
+                .divide(BigDecimal.valueOf(1000L), 8, java.math.RoundingMode.HALF_UP);
+        BigDecimal feeSats = satsPerVb.multiply(BigDecimal.valueOf(vbytes));
+        return feeSats.setScale(0, java.math.RoundingMode.CEILING).longValueExact();
+    }
+
+    public String getAddressPubKey(String address) {
+        LiquidRpcRequest request = LiquidRpcRequest.builder()
+                .method("getaddressinfo")
+                .params(java.util.List.of(address))
+                .build();
+
+        LiquidRpcResponse<Object> response = client.call(request);
+        if (response.getError() != null) {
+            throw new IllegalStateException("Liquid RPC error: " + response.getError().getMessage());
+        }
+        Object result = response.getResult();
+        if (!(result instanceof Map<?, ?> mapResult)) {
+            throw new IllegalStateException("Liquid RPC result missing for getaddressinfo");
+        }
+        Object pubkey = mapResult.get("pubkey");
+        if (pubkey == null || pubkey.toString().isBlank()) {
+            throw new IllegalStateException("Liquid RPC pubkey not available for address=" + address);
+        }
+        return pubkey.toString();
+    }
+
     private Object resolveAssetBalance(Map<?, ?> mapResult) {
         if (mapResult.containsKey("bitcoin")) {
             return mapResult.get("bitcoin");

@@ -50,6 +50,24 @@ public class LightningInvoiceEntity {
     private Long boltzExpectedAmount;
 
     @Column
+    private Double boltzFeePercentage;
+
+    @Column
+    private Long boltzMinerFees;
+
+    @Column
+    private String boltzPairHash;
+
+    @Column
+    private Long liquidFeeSats;
+
+    @Column
+    private Integer liquidFeeConfTarget;
+
+    @Column
+    private Integer liquidFeeVbytes;
+
+    @Column
     private String liquidTxId;
 
     @Column(columnDefinition = "TEXT")
@@ -168,6 +186,54 @@ public class LightningInvoiceEntity {
 
     public void setBoltzExpectedAmount(Long boltzExpectedAmount) {
         this.boltzExpectedAmount = boltzExpectedAmount;
+    }
+
+    public Double getBoltzFeePercentage() {
+        return boltzFeePercentage;
+    }
+
+    public void setBoltzFeePercentage(Double boltzFeePercentage) {
+        this.boltzFeePercentage = boltzFeePercentage;
+    }
+
+    public Long getBoltzMinerFees() {
+        return boltzMinerFees;
+    }
+
+    public void setBoltzMinerFees(Long boltzMinerFees) {
+        this.boltzMinerFees = boltzMinerFees;
+    }
+
+    public String getBoltzPairHash() {
+        return boltzPairHash;
+    }
+
+    public void setBoltzPairHash(String boltzPairHash) {
+        this.boltzPairHash = boltzPairHash;
+    }
+
+    public Long getLiquidFeeSats() {
+        return liquidFeeSats;
+    }
+
+    public void setLiquidFeeSats(Long liquidFeeSats) {
+        this.liquidFeeSats = liquidFeeSats;
+    }
+
+    public Integer getLiquidFeeConfTarget() {
+        return liquidFeeConfTarget;
+    }
+
+    public void setLiquidFeeConfTarget(Integer liquidFeeConfTarget) {
+        this.liquidFeeConfTarget = liquidFeeConfTarget;
+    }
+
+    public Integer getLiquidFeeVbytes() {
+        return liquidFeeVbytes;
+    }
+
+    public void setLiquidFeeVbytes(Integer liquidFeeVbytes) {
+        this.liquidFeeVbytes = liquidFeeVbytes;
     }
 
     public String getLiquidTxId() {
