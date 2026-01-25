@@ -38,7 +38,7 @@ public class LiquidWalletServiceImpl implements LiquidWalletService {
         entity.setCreatedAt(OffsetDateTime.now());
 
         LiquidWalletEntity saved = repository.save(entity);
-        log.info("Liquid wallet created tx={} owner={} address={}", transactionId, ownerId, address);
+        log.info("LiquidWalletServiceImpl - Liquid wallet created tx={} owner={} address={}", transactionId, ownerId, address);
         return saved;
     }
 }

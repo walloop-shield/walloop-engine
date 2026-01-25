@@ -2,7 +2,6 @@ package com.walloop.engine.fixedfloat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.walloop.engine.network.NetworkAssetService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +29,7 @@ public class FixedFloatOrderService {
     private final FixedFloatProperties properties;
     private final FixedFloatOrderRepository repository;
     private final ObjectMapper objectMapper;
-    private final NetworkAssetService networkAssetService;
+    private final LightningToOnchainRateRepository lightningToOnchainRateRepository;
 
     public FixedFloatOrderEntity createOrGetOrder(UUID processId, String chain, String toAddress, long amountSats) {
         Optional<FixedFloatOrderEntity> existing = repository.findFirstByProcessIdOrderByCreatedAtDesc(processId);
@@ -39,8 +38,13 @@ public class FixedFloatOrderService {
         }
 
         String fromCcy = FROM_CCY;
-        String toCcy = resolveToCcy(chain);
-        BigDecimal amountBtc = BigDecimal.valueOf(amountSats)
+        
+        String toCcy = lightningToOnchainRateRepository.findLatestByFromAssetAndNetwork(FROM_CCY, chain)
+                .map(LightningToOnchainRateEntity::getToAsset)
+                .filter(value -> value != null && !value.isBlank())
+                .orElseThrow(() -> new IllegalStateException("Missing FixedFloat mapping for network=" + chain));
+        
+                BigDecimal amountBtc = BigDecimal.valueOf(amountSats)
                 .movePointLeft(8)
                 .setScale(8, RoundingMode.DOWN);
 
@@ -64,6 +68,9 @@ public class FixedFloatOrderService {
         if (response == null) {
             throw new IllegalStateException("FixedFloat order response not available");
         }
+        if (!isSuccess(response)) {
+            throw new IllegalStateException("FixedFloat order creation failed: " + response.msg());
+        }
 
         FixedFloatOrderEntity entity = new FixedFloatOrderEntity();
         entity.setProcessId(processId);
@@ -81,13 +88,7 @@ public class FixedFloatOrderService {
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
 
-        if (!isSuccess(response)) {
-            repository.save(entity);
-            throw new IllegalStateException("FixedFloat order creation failed: " + response.msg());
-        }
-
         if (entity.getOrderId() == null || entity.getOrderToken() == null) {
-            repository.save(entity);
             throw new IllegalStateException("FixedFloat order response missing id/token");
         }
 
@@ -126,23 +127,6 @@ public class FixedFloatOrderService {
             return false;
         }
         return confirmations >= required;
-    }
-
-    private String resolveToCcy(String chain) {
-        String mainAsset = networkAssetService.requireMainAsset(chain);
-        String normalizedChain = normalize(chain);
-        String normalizedAsset = normalize(mainAsset);
-        Map<String, String> overrides = properties.getToCcyOverrides();
-        if (overrides != null) {
-            String override = overrides.get(normalizedChain);
-            if (override == null) {
-                override = overrides.get(normalizedAsset);
-            }
-            if (override != null && !override.isBlank()) {
-                return override;
-            }
-        }
-        return mainAsset;
     }
 
     private String requireApiKey() {

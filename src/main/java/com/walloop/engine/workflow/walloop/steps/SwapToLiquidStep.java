@@ -66,7 +66,7 @@ public class SwapToLiquidStep implements WorkflowStep {
                 context.put(WalloopWorkflowContextKeys.SWAP_DEPOSIT_ADDRESS, shift.depositAddress());
 
                 log.info(
-                        "SideShift swap created for processId={} depositCoin={} depositAddress={} settleCoin={} settleNetwork={}",
+                        "SwapToLiquidStep - SideShift swap created for processId={} depositCoin={} depositAddress={} settleCoin={} settleNetwork={}",
                         processId,
                         shift.depositCoin(),
                         shift.depositAddress(),
@@ -103,7 +103,7 @@ public class SwapToLiquidStep implements WorkflowStep {
                 shiftEntity.setStatus(SideShiftShiftStatus.WITHDRAW_REQUESTED);
                 shiftEntity.setUpdatedAt(OffsetDateTime.now());
                 shiftRepository.save(shiftEntity);
-                log.info("Withdraw requested for processId={} destination=SIDESHIFT", processId);
+                log.info("SwapToLiquidStep - Withdraw requested for processId={} destination=SIDESHIFT", processId);
             }
             return StepResult.waiting("Waiting for SideShift withdrawal confirmation");
         }
@@ -114,10 +114,10 @@ public class SwapToLiquidStep implements WorkflowStep {
     private StepResult retryOrFail(UUID processId, String detail, RuntimeException error) {
         int retries = countRetries(processId);
         if (retries >= MAX_RETRIES) {
-            log.warn("{} after {} retries processId={}", detail, retries, processId, error);
+            log.warn("SwapToLiquidStep - {} after {} retries processId={}", detail, retries, processId, error);
             return StepResult.failed(detail + " after retries");
         }
-        log.warn("{} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
+        log.warn("SwapToLiquidStep - {} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
         return StepResult.retry(detail, RETRY_DELAY);
     }
 

@@ -40,7 +40,7 @@ public class DepositDetectedConsumer {
         Optional<WorkflowExecution> execution = workflowExecutionRepository.findByTransactionId(processId);
 
         if (execution.isEmpty()) {
-            log.warn("Deposit detected for unknown processId={}", processId);
+            log.warn("DepositDetectedConsumer - Deposit detected for unknown processId={}", processId);
             return;
         }
 
@@ -58,7 +58,7 @@ public class DepositDetectedConsumer {
 
         WorkflowContext context = buildContext(processId, ownerId);
         orchestrator.resume(workflowExecution.getId(), workflow, context);
-        log.info("Workflow resumed for processId={} executionId={}", processId, workflowExecution.getId());
+        log.info("DepositDetectedConsumer - Workflow resumed for processId={} executionId={}", processId, workflowExecution.getId());
     }
 
     private DepositMonitorEntity createMonitorFromTransaction(UUID processId, UUID ownerId) {

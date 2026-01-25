@@ -127,7 +127,7 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
         feeCalculationRepository.save(entity);
 
         log.info(
-                "Fee calculated processId={} percent={} sats={} onchainSats={} totalSats={}",
+                "FeeCalculationServiceImpl - Fee calculated processId={} percent={} sats={} onchainSats={} totalSats={}",
                 transactionId,
                 feePercent,
                 feeSats,

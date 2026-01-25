@@ -86,7 +86,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         payload.put("orderResponse", orderResponse);
 
         String responsePayload = serializePayload(payload);
-        log.info("LSP order requested processId={} externalId={}", request.processId(), externalId);
+        log.info("HttpLspLiquidityService - LSP order requested processId={} externalId={}", request.processId(), externalId);
         return new LspLiquidityResponse(externalId, responsePayload, nodeAddress);
     }
 
@@ -180,7 +180,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
     private String connectToOfferNode(RestClient client, String endpoint, OfferSelection offerSelection) {
         String account = offerSelection.account();
         if (account == null || account.isBlank()) {
-            log.warn("LSP offer missing account for connect. offerId={}", offerSelection.id());
+            log.warn("HttpLspLiquidityService - LSP offer missing account for connect. offerId={}", offerSelection.id());
             return null;
         }
 
@@ -192,7 +192,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         String host = resolveNodeHost(client, endpoint, pubkey);
 
         if (host == null || host.isBlank()) {
-            log.warn("Unable to resolve LSP offer node address. offerId={} pubkey={}", offerSelection.id(), pubkey);
+            log.warn("HttpLspLiquidityService - Unable to resolve LSP offer node address. offerId={} pubkey={}", offerSelection.id(), pubkey);
             return null;
         }
 
@@ -202,10 +202,10 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         try {
             lndApi.connectPeer(address, false, null);
             String nodeAddress = pubkey + "@" + host;
-            log.info("Connected to LSP offer node. offerId={} address={}", offerSelection.id(), nodeAddress);
+            log.info("HttpLspLiquidityService - Connected to LSP offer node. offerId={} address={}", offerSelection.id(), nodeAddress);
             return nodeAddress;
         } catch (StatusException | ValidationException e) {
-            log.warn("Failed to connect to LSP offer node. offerId={} address={}", offerSelection.id(), pubkey + "@" + host, e);
+            log.warn("HttpLspLiquidityService - Failed to connect to LSP offer node. offerId={} address={}", offerSelection.id(), pubkey + "@" + host, e);
             return null;
         }
     }
@@ -301,7 +301,7 @@ public class HttpLspLiquidityService implements LspLiquidityService {
         try {
             return executeGraphql(client, endpoint, query, variables);
         } catch (Exception e) {
-            log.warn("Failed to execute LSP GraphQL query for node lookup", e);
+            log.warn("HttpLspLiquidityService - Failed to execute LSP GraphQL query for node lookup", e);
             return null;
         }
     }

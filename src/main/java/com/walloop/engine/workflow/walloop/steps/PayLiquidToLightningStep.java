@@ -121,7 +121,7 @@ public class PayLiquidToLightningStep implements WorkflowStep {
                 invoiceEntity.setStatus(LightningInvoiceStatus.LOCKUP_SENT);
                 invoiceEntity.setUpdatedAt(OffsetDateTime.now());
                 lightningInvoiceRepository.save(invoiceEntity);
-                log.info("Boltz lockup sent processId={} address={} txId={}", processId, destinationAddress, txId);
+                log.info("PayLiquidToLightningStep - Boltz lockup sent processId={} address={} txId={}", processId, destinationAddress, txId);
             } catch (RuntimeException e) {
                 return retryOrFail(processId, "Liquid lockup transaction failed", e);
             }
@@ -140,10 +140,10 @@ public class PayLiquidToLightningStep implements WorkflowStep {
     private StepResult retryOrFail(UUID processId, String detail, RuntimeException error) {
         int retries = countRetries(processId);
         if (retries >= MAX_RETRIES) {
-            log.warn("{} after {} retries processId={}", detail, retries, processId, error);
+            log.warn("PayLiquidToLightningStep - {} after {} retries processId={}", detail, retries, processId, error);
             return StepResult.failed(detail + " after retries");
         }
-        log.warn("{} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
+        log.warn("PayLiquidToLightningStep - {} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
         return StepResult.retry(detail, RETRY_DELAY);
     }
 

@@ -104,11 +104,11 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
         fixedFloatStatusScheduler.ensurePolling();
 
         if (fixedFloatOrderService.isCompleted(order)) {
-            log.info("FixedFloat order completed processId={} orderId={}", processId, order.getOrderId());
+            log.info("ConvertLightningToWalloopStep - FixedFloat order completed processId={} orderId={}", processId, order.getOrderId());
             return StepResult.completed("Funds sent to destination wallet");
         }
 
-        log.info("FixedFloat order pending processId={} orderId={}", processId, order.getOrderId());
+        log.info("ConvertLightningToWalloopStep - FixedFloat order pending processId={} orderId={}", processId, order.getOrderId());
         return StepResult.waiting("Waiting for FixedFloat confirmation");
     }
 

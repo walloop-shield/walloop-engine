@@ -52,7 +52,7 @@ public class ReturnToMainWalletStep implements WorkflowStep {
             withdrawal.setRequestedAt(OffsetDateTime.now());
             withdrawal.setUpdatedAt(OffsetDateTime.now());
             withdrawalRepository.save(withdrawal);
-            log.info("Withdraw requested for processId={} destination=WALLOOP", processId);
+            log.info("ReturnToMainWalletStep - Withdraw requested for processId={} destination=WALLOOP", processId);
         }
 
         return StepResult.waiting("Waiting for destination wallet withdrawal confirmation");

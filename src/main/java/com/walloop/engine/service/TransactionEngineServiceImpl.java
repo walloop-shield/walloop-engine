@@ -46,7 +46,7 @@ public class TransactionEngineServiceImpl implements TransactionEngineService {
                 new WorkflowStartMetadata(message.getProcessId(), message.getOwnerId())
         );
         log.info(
-                "Workflow started: executionId={} workflow={} status={} processId={}",
+                "TransactionEngineServiceImpl - Workflow started: executionId={} workflow={} status={} processId={}",
                 execution.getId(),
                 execution.getWorkflowName(),
                 execution.getStatus(),

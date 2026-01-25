@@ -48,7 +48,7 @@ public class WithdrawCompletedConsumer {
             shift.setUpdatedAt(OffsetDateTime.now());
             shiftRepository.save(shift);
             handled = true;
-            log.info("Withdraw completed for processId={} destination=SIDESHIFT", processId);
+            log.info("WithdrawCompletedConsumer - Withdraw completed for processId={} destination=SIDESHIFT", processId);
         }
 
         WalloopWithdrawalEntity withdrawal = withdrawalRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
@@ -58,12 +58,12 @@ public class WithdrawCompletedConsumer {
             withdrawal.setUpdatedAt(OffsetDateTime.now());
             withdrawalRepository.save(withdrawal);
             handled = true;
-            log.info("Withdraw completed for processId={} destination=WALLOOP", processId);
+            log.info("WithdrawCompletedConsumer - Withdraw completed for processId={} destination=WALLOOP", processId);
             resumeWorkflow(processId);
         }
 
         if (!handled) {
-            log.warn("Withdraw completed for unknown processId={}", processId);
+            log.warn("WithdrawCompletedConsumer - Withdraw completed for unknown processId={}", processId);
         }
     }
 
@@ -71,18 +71,18 @@ public class WithdrawCompletedConsumer {
         WorkflowExecution execution = workflowExecutionRepository.findByTransactionId(processId)
                 .orElse(null);
         if (execution == null) {
-            log.warn("Workflow execution not found for processId={}", processId);
+            log.warn("WithdrawCompletedConsumer - Workflow execution not found for processId={}", processId);
             return;
         }
         UUID ownerId = execution.getOwnerId();
         if (ownerId == null) {
-            log.warn("OwnerId missing for processId={}", processId);
+            log.warn("WithdrawCompletedConsumer - OwnerId missing for processId={}", processId);
             return;
         }
 
         WorkflowContext context = buildContext(processId, ownerId);
         orchestrator.resume(execution.getId(), workflow, context);
-        log.info("Workflow resumed after withdraw completion processId={} executionId={}", processId, execution.getId());
+        log.info("WithdrawCompletedConsumer - Workflow resumed after withdraw completion processId={} executionId={}", processId, execution.getId());
     }
 
     private WorkflowContext buildContext(UUID processId, UUID ownerId) {

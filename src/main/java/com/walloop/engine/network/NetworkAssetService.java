@@ -58,7 +58,7 @@ public class NetworkAssetService {
             List<NetworkAssetResponse> assets = walletNetworkClient.listNetworks();
             return assets == null ? List.of() : assets;
         } catch (Exception ex) {
-            log.warn("Failed to fetch network catalog from wallet service", ex);
+            log.warn("NetworkAssetService - Failed to fetch network catalog from wallet service", ex);
             return List.of();
         }
     }

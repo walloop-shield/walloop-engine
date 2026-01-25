@@ -41,7 +41,7 @@ public class CreateLightningInvoiceStep implements WorkflowStep {
 
         String invoice = lightningInvoiceService.createOrGetInvoice(processId, ownerId);
         context.put(WalloopWorkflowContextKeys.LIGHTNING_INVOICE, invoice);
-        log.info("Lightning invoice created for processId={} ownerId={}", processId, ownerId);
+        log.info("CreateLightningInvoiceStep - Lightning invoice created for processId={} ownerId={}", processId, ownerId);
         return StepResult.completed("Lightning invoice created");
     }
 }

@@ -121,7 +121,7 @@ public class LightningInboundLiquidityService {
         } catch (Exception e) {
             entity.setStatus(LightningInboundLiquidityRequestStatus.FAILED);
             entity.setErrorMessage(e.getMessage());
-            log.warn("Failed to request inbound liquidity processId={}", processId, e);
+            log.warn("LightningInboundLiquidityService - Failed to request inbound liquidity processId={}", processId, e);
         }
 
         entity.setUpdatedAt(OffsetDateTime.now());

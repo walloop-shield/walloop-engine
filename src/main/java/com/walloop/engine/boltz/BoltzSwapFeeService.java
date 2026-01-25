@@ -71,7 +71,7 @@ public class BoltzSwapFeeService {
             }
             return Optional.ofNullable(fromMap.get(TO_ASSET));
         } catch (Exception e) {
-            log.warn("Failed to fetch Boltz submarine fees", e);
+            log.warn("BoltzSwapFeeService - Failed to fetch Boltz submarine fees", e);
             return Optional.empty();
         }
     }

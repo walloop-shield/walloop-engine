@@ -37,7 +37,7 @@ public class CreateLiquidWalletStep implements WorkflowStep {
         try {
             LiquidWalletEntity wallet = liquidWalletService.createForTransaction(processId, ownerId);
             context.put(WalloopWorkflowContextKeys.LIQUID_ADDRESS, wallet.getAddress());
-            log.info("Liquid wallet ready for processId={} owner={} address={}", processId, ownerId, wallet.getAddress());
+            log.info("CreateLiquidWalletStep - Liquid wallet ready for processId={} owner={} address={}", processId, ownerId, wallet.getAddress());
             return StepResult.completed("Liquid wallet ready");
         } catch (RuntimeException e) {
             return retryOrFail(processId, "Liquid wallet creation failed", e);
@@ -47,10 +47,10 @@ public class CreateLiquidWalletStep implements WorkflowStep {
     private StepResult retryOrFail(UUID processId, String detail, RuntimeException error) {
         int retries = countRetries(processId);
         if (retries >= MAX_RETRIES) {
-            log.warn("{} after {} retries processId={}", detail, retries, processId, error);
+            log.warn("CreateLiquidWalletStep - {} after {} retries processId={}", detail, retries, processId, error);
             return StepResult.failed(detail + " after retries");
         }
-        log.warn("{} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
+        log.warn("CreateLiquidWalletStep - {} (retry {}/{}) processId={}", detail, retries + 1, MAX_RETRIES, processId, error);
         return StepResult.retry(detail, RETRY_DELAY);
     }
 

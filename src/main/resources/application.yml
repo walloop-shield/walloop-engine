@@ -59,7 +59,7 @@ fixedfloat:
 boltz:
   base-url: ${BOLTZ_BASE_URL:https://api.boltz.exchange/v2}
   status-cron: 0 * * * * *
-  paid-status: invoice.paid
+  paid-status: transaction.claimed
   cloud:
     openfeign:
       client:

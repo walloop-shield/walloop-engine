@@ -84,7 +84,7 @@ public class SideShiftStatusScheduler {
     boolean pollShiftStatuses() {
         String secret = properties.getSecret();
         if (secret == null || secret.isBlank()) {
-            log.debug("SideShift secret not configured; skipping status polling");
+            log.debug("SideShiftStatusScheduler - SideShift secret not configured; skipping status polling");
             return false;
         }
 
@@ -107,7 +107,7 @@ public class SideShiftStatusScheduler {
                     pendingLeft = true;
                 }
             } catch (Exception e) {
-                log.warn("Failed to poll SideShift shiftId={} processId={}", shift.getShiftId(), shift.getProcessId(), e);
+                log.warn("SideShiftStatusScheduler - Failed to poll SideShift shiftId={} processId={}", shift.getShiftId(), shift.getProcessId(), e);
                 pendingLeft = true;
             }
         }
@@ -145,20 +145,20 @@ public class SideShiftStatusScheduler {
         WorkflowExecution execution = workflowExecutionRepository.findByTransactionId(processId)
                 .orElse(null);
         if (execution == null) {
-            log.warn("Workflow execution not found for processId={}", processId);
+            log.warn("SideShiftStatusScheduler - Workflow execution not found for processId={}", processId);
             return;
         }
 
         UUID ownerId = execution.getOwnerId();
         if (ownerId == null) {
-            log.warn("OwnerId missing for processId={}", processId);
+            log.warn("SideShiftStatusScheduler - OwnerId missing for processId={}", processId);
             return;
         }
 
         WorkflowContext context = buildContext(processId, ownerId);
         WalloopEngineWorkflow workflow = workflowProvider.getObject();
         orchestrator.resume(execution.getId(), workflow, context);
-        log.info("Workflow resumed after SideShift settlement processId={} executionId={}", processId, execution.getId());
+        log.info("SideShiftStatusScheduler - Workflow resumed after SideShift settlement processId={} executionId={}", processId, execution.getId());
     }
 
     private WorkflowContext buildContext(UUID processId, UUID ownerId) {

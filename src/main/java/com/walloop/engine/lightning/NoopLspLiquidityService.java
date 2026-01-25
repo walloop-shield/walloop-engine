@@ -11,7 +11,7 @@ public class NoopLspLiquidityService implements LspLiquidityService {
 
     @Override
     public LspLiquidityResponse requestInboundLiquidity(LspLiquidityRequest request) {
-        log.warn("LSP disabled, inbound liquidity request skipped processId={}", request.processId());
+        log.warn("NoopLspLiquidityService - LSP disabled, inbound liquidity request skipped processId={}", request.processId());
         return new LspLiquidityResponse(null, null, null);
     }
 }

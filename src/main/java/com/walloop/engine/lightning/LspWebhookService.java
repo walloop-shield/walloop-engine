@@ -32,7 +32,7 @@ public class LspWebhookService {
                 );
 
         if (request.isEmpty()) {
-            log.warn("Amboss webhook received but no matching request found. provider={}", PROVIDER);
+            log.warn("LspWebhookService - Amboss webhook received but no matching request found. provider={}", PROVIDER);
             return;
         }
 

@@ -44,7 +44,7 @@ public class CoinCapFxRateProvider implements FxRateProvider {
             BigDecimal usdBrl = fetchUsdBrlRate();
             return Optional.of(new FxRateSnapshot(btcUsd.get(), usdBrl));
         } catch (Exception e) {
-            log.warn("Failed to fetch CoinCap rates", e);
+            log.warn("CoinCapFxRateProvider - Failed to fetch CoinCap rates", e);
             return Optional.empty();
         }
     }
@@ -80,7 +80,7 @@ public class CoinCapFxRateProvider implements FxRateProvider {
             BigDecimal priceUsd = toBigDecimal(dataMap.get("priceUsd"));
             return Optional.ofNullable(priceUsd);
         } catch (Exception e) {
-            log.warn("Failed to fetch CoinCap price for asset={}", assetId, e);
+            log.warn("CoinCapFxRateProvider - Failed to fetch CoinCap price for asset={}", assetId, e);
             return Optional.empty();
         }
     }
@@ -118,7 +118,7 @@ public class CoinCapFxRateProvider implements FxRateProvider {
             }
             return BigDecimal.ONE.divide(rateUsd, 8, RoundingMode.DOWN);
         } catch (Exception e) {
-            log.warn("Failed to fetch CoinCap USD/BRL rate", e);
+            log.warn("CoinCapFxRateProvider - Failed to fetch CoinCap USD/BRL rate", e);
             return null;
         }
     }

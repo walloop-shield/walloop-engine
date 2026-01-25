@@ -47,7 +47,7 @@ public class WorkflowAdminService {
 
         WorkflowContext context = buildContext(processId, ownerId);
         WorkflowExecution resumed = orchestrator.resume(execution.getId(), workflow, context);
-        log.info("Workflow resumed from step {} processId={} executionId={}", stepKey, processId, execution.getId());
+        log.info("WorkflowAdminService - Workflow resumed from step {} processId={} executionId={}", stepKey, processId, execution.getId());
         return resumed;
     }
 

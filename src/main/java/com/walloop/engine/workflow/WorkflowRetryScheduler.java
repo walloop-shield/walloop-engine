@@ -96,7 +96,7 @@ public class WorkflowRetryScheduler {
         UUID processId = execution.getTransactionId();
         UUID ownerId = execution.getOwnerId();
         if (processId == null || ownerId == null) {
-            log.warn("Retry skipped, missing identifiers. executionId={}", execution.getId());
+            log.warn("WorkflowRetryScheduler - Retry skipped, missing identifiers. executionId={}", execution.getId());
             return;
         }
 
@@ -113,7 +113,7 @@ public class WorkflowRetryScheduler {
 
         WalloopEngineWorkflow workflow = workflowProvider.getObject();
         orchestrator.resume(execution.getId(), workflow, context);
-        log.info("Workflow retried executionId={} processId={}", execution.getId(), processId);
+        log.info("WorkflowRetryScheduler - Workflow retried executionId={} processId={}", execution.getId(), processId);
     }
 
     private void stopPolling() {

@@ -89,7 +89,7 @@ public class FixedFloatStatusScheduler {
                     pendingLeft = true;
                 }
             } catch (Exception e) {
-                log.warn("Failed to poll FixedFloat orderId={}", order.getOrderId(), e);
+                log.warn("FixedFloatStatusScheduler - Failed to poll FixedFloat orderId={}", order.getOrderId(), e);
                 pendingLeft = true;
             }
         }
@@ -107,19 +107,19 @@ public class FixedFloatStatusScheduler {
         WorkflowExecution execution = workflowExecutionRepository.findByTransactionId(processId)
                 .orElse(null);
         if (execution == null) {
-            log.warn("Workflow execution not found for processId={}", processId);
+            log.warn("FixedFloatStatusScheduler - Workflow execution not found for processId={}", processId);
             return;
         }
         UUID ownerId = execution.getOwnerId();
         if (ownerId == null) {
-            log.warn("OwnerId missing for processId={}", processId);
+            log.warn("FixedFloatStatusScheduler - OwnerId missing for processId={}", processId);
             return;
         }
 
         WorkflowContext context = buildContext(processId, ownerId);
         WalloopEngineWorkflow workflow = workflowProvider.getObject();
         orchestrator.resume(execution.getId(), workflow, context);
-        log.info("Workflow resumed after FixedFloat completion processId={} executionId={}", processId, execution.getId());
+        log.info("FixedFloatStatusScheduler - Workflow resumed after FixedFloat completion processId={} executionId={}", processId, execution.getId());
     }
 
     private WorkflowContext buildContext(UUID processId, UUID ownerId) {

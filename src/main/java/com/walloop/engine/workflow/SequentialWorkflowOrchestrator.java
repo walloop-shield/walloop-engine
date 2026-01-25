@@ -68,7 +68,7 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
                         execution.clearRetry();
                     }
                     repository.save(execution);
-                    log.info("Workflow {} waiting at step {}: {}", execution.getId(), step.key(), result.detail());
+                    log.info("SequentialWorkflowOrchestrator - Workflow {} waiting at step {}: {}", execution.getId(), step.key(), result.detail());
                     if (result.status() == StepStatus.RETRY) {
                         eventPublisher.publishEvent(new WorkflowRetryScheduledEvent(execution.getId()));
                     }
@@ -77,13 +77,13 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
 
                 execution.setStatus(WorkflowStatus.FAILED);
                 repository.save(execution);
-                log.warn("Workflow {} failed at step {}: {}", execution.getId(), step.key(), result.detail());
+                log.warn("SequentialWorkflowOrchestrator - Workflow {} failed at step {}: {}", execution.getId(), step.key(), result.detail());
                 return execution;
             } catch (Exception e) {
                 execution.addHistory(new StepExecution(step.key(), StepStatus.FAILED, e.getMessage(), Instant.now()));
                 execution.setStatus(WorkflowStatus.FAILED);
                 repository.save(execution);
-                log.error("Workflow {} exception at step {}", execution.getId(), step.key(), e);
+                log.error("SequentialWorkflowOrchestrator - Workflow {} exception at step {}", execution.getId(), step.key(), e);
                 return execution;
             }
         }
