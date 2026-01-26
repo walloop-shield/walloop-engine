@@ -1,7 +1,9 @@
-package com.walloop.engine.sideshift;
+package com.walloop.engine.swap;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -10,8 +12,8 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "sideshift_pair_simulation", schema = "engine")
-public class SideShiftPairSimulationEntity {
+@Table(name = "swap_quote", schema = "engine")
+public class SwapQuoteEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -19,6 +21,10 @@ public class SideShiftPairSimulationEntity {
 
     @Column(nullable = false)
     private UUID processId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SwapPartner partner;
 
     @Column(nullable = false)
     private String fromCoin;
@@ -32,34 +38,34 @@ public class SideShiftPairSimulationEntity {
     @Column
     private String toNetwork;
 
-    @Column(name = "amount")
+    @Column
     private String amount;
 
-    @Column(name = "last_balance")
+    @Column
     private String lastBalance;
 
-    @Column(name = "min")
+    @Column
     private String min;
 
-    @Column(name = "max")
+    @Column
     private String max;
 
-    @Column(name = "rate")
+    @Column
     private String rate;
 
-    @Column(name = "deposit_coin")
+    @Column
     private String depositCoin;
 
-    @Column(name = "settle_coin")
+    @Column
     private String settleCoin;
 
-    @Column(name = "deposit_network")
+    @Column
     private String depositNetwork;
 
-    @Column(name = "settle_network")
+    @Column
     private String settleNetwork;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String requestPayload;
 
     @Column(columnDefinition = "TEXT")
@@ -82,6 +88,14 @@ public class SideShiftPairSimulationEntity {
 
     public void setProcessId(UUID processId) {
         this.processId = processId;
+    }
+
+    public SwapPartner getPartner() {
+        return partner;
+    }
+
+    public void setPartner(SwapPartner partner) {
+        this.partner = partner;
     }
 
     public String getFromCoin() {

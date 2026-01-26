@@ -1,4 +1,4 @@
-package com.walloop.engine.sideshift;
+package com.walloop.engine.swap;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,8 +12,8 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "sideshift_shift", schema = "engine")
-public class SideShiftShiftEntity {
+@Table(name = "swap_order", schema = "engine")
+public class SwapOrderEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -22,8 +22,12 @@ public class SideShiftShiftEntity {
     @Column(nullable = false)
     private UUID processId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SwapPartner partner;
+
     @Column
-    private String shiftId;
+    private String partnerOrderId;
 
     @Column
     private String depositAddress;
@@ -39,7 +43,7 @@ public class SideShiftShiftEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SideShiftShiftStatus status;
+    private SwapOrderStatus status;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String requestPayload;
@@ -75,12 +79,20 @@ public class SideShiftShiftEntity {
         this.processId = processId;
     }
 
-    public String getShiftId() {
-        return shiftId;
+    public SwapPartner getPartner() {
+        return partner;
     }
 
-    public void setShiftId(String shiftId) {
-        this.shiftId = shiftId;
+    public void setPartner(SwapPartner partner) {
+        this.partner = partner;
+    }
+
+    public String getPartnerOrderId() {
+        return partnerOrderId;
+    }
+
+    public void setPartnerOrderId(String partnerOrderId) {
+        this.partnerOrderId = partnerOrderId;
     }
 
     public String getDepositAddress() {
@@ -115,11 +127,11 @@ public class SideShiftShiftEntity {
         this.userIp = userIp;
     }
 
-    public SideShiftShiftStatus getStatus() {
+    public SwapOrderStatus getStatus() {
         return status;
     }
 
-    public void setStatus(SideShiftShiftStatus status) {
+    public void setStatus(SwapOrderStatus status) {
         this.status = status;
     }
 

@@ -6,19 +6,22 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.walloop.engine.lightning.swap.LightningSwapFeeProvider;
+import com.walloop.engine.lightning.swap.LightningSwapFeeQuote;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BoltzSwapFeeService {
+public class BoltzSwapFeeService implements LightningSwapFeeProvider {
 
     private static final String FROM_ASSET = "L-BTC";
     private static final String TO_ASSET = "BTC";
 
     private final BoltzClient boltzClient;
 
-    public FeeQuote quoteInvoice(long balanceSats) {
+    @Override
+    public LightningSwapFeeQuote quoteInvoice(long balanceSats) {
         Optional<BoltzSubmarinePair> pair = resolveSubmarinePair();
         if (pair.isEmpty()) {
             throw new IllegalStateException("Boltz submarine fees not available");
@@ -56,7 +59,7 @@ public class BoltzSwapFeeService {
             }
         }
 
-        return new FeeQuote(invoiceSats, percentage, minerFees, submarinePair.hash());
+        return new LightningSwapFeeQuote(invoiceSats, percentage, minerFees, submarinePair.hash());
     }
 
     private Optional<BoltzSubmarinePair> resolveSubmarinePair() {
@@ -71,11 +74,8 @@ public class BoltzSwapFeeService {
             }
             return Optional.ofNullable(fromMap.get(TO_ASSET));
         } catch (Exception e) {
-            log.warn("BoltzSwapFeeService - Failed to fetch Boltz submarine fees", e);
+            log.warn("BoltzSwapFeeService - fee lookup failed - partner=boltz", e);
             return Optional.empty();
         }
-    }
-
-    public record FeeQuote(long invoiceSats, double percentage, long minerFees, String hash) {
     }
 }

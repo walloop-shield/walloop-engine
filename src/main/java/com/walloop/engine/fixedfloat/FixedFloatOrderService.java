@@ -2,6 +2,10 @@ package com.walloop.engine.fixedfloat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walloop.engine.conversion.ConversionOrderEntity;
+import com.walloop.engine.conversion.ConversionOrderRepository;
+import com.walloop.engine.conversion.ConversionPartner;
+import com.walloop.engine.conversion.ConversionPartnerService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -17,7 +21,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class FixedFloatOrderService {
+public class FixedFloatOrderService implements ConversionPartnerService {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String ORDER_TYPE = "float";
@@ -27,24 +31,28 @@ public class FixedFloatOrderService {
 
     private final FixedFloatClient client;
     private final FixedFloatProperties properties;
-    private final FixedFloatOrderRepository repository;
+    private final ConversionOrderRepository repository;
     private final ObjectMapper objectMapper;
     private final LightningToOnchainRateRepository lightningToOnchainRateRepository;
 
-    public FixedFloatOrderEntity createOrGetOrder(UUID processId, String chain, String toAddress, long amountSats) {
-        Optional<FixedFloatOrderEntity> existing = repository.findFirstByProcessIdOrderByCreatedAtDesc(processId);
+    @Override
+    public ConversionOrderEntity createOrGetOrder(UUID processId, String chain, String toAddress, long amountSats) {
+        Optional<ConversionOrderEntity> existing = repository.findFirstByProcessIdAndPartnerOrderByCreatedAtDesc(
+                processId,
+                ConversionPartner.FIXEDFLOAT
+        );
         if (existing.isPresent()) {
             return existing.get();
         }
 
         String fromCcy = FROM_CCY;
-        
+
         String toCcy = lightningToOnchainRateRepository.findLatestByFromAssetAndNetwork(FROM_CCY, chain)
                 .map(LightningToOnchainRateEntity::getToAsset)
                 .filter(value -> value != null && !value.isBlank())
                 .orElseThrow(() -> new IllegalStateException("Missing FixedFloat mapping for network=" + chain));
-        
-                BigDecimal amountBtc = BigDecimal.valueOf(amountSats)
+
+        BigDecimal amountBtc = BigDecimal.valueOf(amountSats)
                 .movePointLeft(8)
                 .setScale(8, RoundingMode.DOWN);
 
@@ -72,10 +80,11 @@ public class FixedFloatOrderService {
             throw new IllegalStateException("FixedFloat order creation failed: " + response.msg());
         }
 
-        FixedFloatOrderEntity entity = new FixedFloatOrderEntity();
+        ConversionOrderEntity entity = new ConversionOrderEntity();
         entity.setProcessId(processId);
-        entity.setOrderId(asString(nested(response.data(), "id")));
-        entity.setOrderToken(asString(nested(response.data(), "token")));
+        entity.setPartner(ConversionPartner.FIXEDFLOAT);
+        entity.setPartnerOrderId(asString(nested(response.data(), "id")));
+        entity.setPartnerOrderToken(asString(nested(response.data(), "token")));
         entity.setStatus(asString(nested(response.data(), "status")));
         entity.setFromCcy(fromCcy);
         entity.setToCcy(toCcy);
@@ -88,7 +97,7 @@ public class FixedFloatOrderService {
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
 
-        if (entity.getOrderId() == null || entity.getOrderToken() == null) {
+        if (entity.getPartnerOrderId() == null || entity.getPartnerOrderToken() == null) {
             throw new IllegalStateException("FixedFloat order response missing id/token");
         }
 
@@ -96,8 +105,12 @@ public class FixedFloatOrderService {
         return entity;
     }
 
-    public FixedFloatOrderEntity refreshOrder(FixedFloatOrderEntity entity) {
-        FixedFloatOrderRequest request = new FixedFloatOrderRequest(entity.getOrderId(), entity.getOrderToken());
+    @Override
+    public ConversionOrderEntity refreshOrder(ConversionOrderEntity entity) {
+        FixedFloatOrderRequest request = new FixedFloatOrderRequest(
+                entity.getPartnerOrderId(),
+                entity.getPartnerOrderToken()
+        );
         String payload = toJson(request);
         FixedFloatResponse<Map<String, Object>> response = client.getOrder(
                 requireApiKey(),
@@ -120,7 +133,8 @@ public class FixedFloatOrderService {
         return repository.save(entity);
     }
 
-    public boolean isCompleted(FixedFloatOrderEntity entity) {
+    @Override
+    public boolean isCompleted(ConversionOrderEntity entity) {
         Integer confirmations = entity.getConfirmations();
         int required = REQUIRED_CONFIRMATIONS;
         if (confirmations == null) {

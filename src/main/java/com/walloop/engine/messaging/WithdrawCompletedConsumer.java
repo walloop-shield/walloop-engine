@@ -1,8 +1,8 @@
 package com.walloop.engine.messaging;
 
-import com.walloop.engine.sideshift.SideShiftShiftEntity;
-import com.walloop.engine.sideshift.SideShiftShiftRepository;
-import com.walloop.engine.sideshift.SideShiftShiftStatus;
+import com.walloop.engine.swap.SwapOrderEntity;
+import com.walloop.engine.swap.SwapOrderRepository;
+import com.walloop.engine.swap.SwapOrderStatus;
 import com.walloop.engine.transaction.dto.WalletTransactionDetails;
 import com.walloop.engine.transaction.service.WalletTransactionQueryService;
 import com.walloop.engine.withdrawal.WalloopWithdrawalEntity;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class WithdrawCompletedConsumer {
 
-    private final SideShiftShiftRepository shiftRepository;
+    private final SwapOrderRepository swapOrderRepository;
     private final WalloopWithdrawalRepository withdrawalRepository;
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final WalletTransactionQueryService walletTransactionQueryService;
@@ -40,15 +40,19 @@ public class WithdrawCompletedConsumer {
         UUID processId = message.processId();
         boolean handled = false;
 
-        SideShiftShiftEntity shift = shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
+        SwapOrderEntity shift = swapOrderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
                 .orElse(null);
-        if (shift != null && shift.getStatus() != SideShiftShiftStatus.SETTLED) {
+        if (shift != null && shift.getStatus() != SwapOrderStatus.SETTLED) {
             shift.setWithdrawCompletedAt(OffsetDateTime.now());
-            shift.setStatus(SideShiftShiftStatus.WITHDRAW_COMPLETED);
+            shift.setStatus(SwapOrderStatus.WITHDRAW_COMPLETED);
             shift.setUpdatedAt(OffsetDateTime.now());
-            shiftRepository.save(shift);
+            swapOrderRepository.save(shift);
             handled = true;
-            log.info("WithdrawCompletedConsumer - Withdraw completed for processId={} destination=SIDESHIFT", processId);
+            log.info(
+                    "WithdrawCompletedConsumer - withdraw completed - processId={} destination={}",
+                    processId,
+                    shift.getPartner()
+            );
         }
 
         WalloopWithdrawalEntity withdrawal = withdrawalRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
@@ -58,12 +62,12 @@ public class WithdrawCompletedConsumer {
             withdrawal.setUpdatedAt(OffsetDateTime.now());
             withdrawalRepository.save(withdrawal);
             handled = true;
-            log.info("WithdrawCompletedConsumer - Withdraw completed for processId={} destination=WALLOOP", processId);
+            log.info("WithdrawCompletedConsumer - withdraw completed - processId={} destination=TO_PRINCIPAL_WALLET", processId);
             resumeWorkflow(processId);
         }
 
         if (!handled) {
-            log.warn("WithdrawCompletedConsumer - Withdraw completed for unknown processId={}", processId);
+            log.warn("WithdrawCompletedConsumer - withdraw completed - processId={} destination=UNKNOWN", processId);
         }
     }
 
@@ -71,18 +75,22 @@ public class WithdrawCompletedConsumer {
         WorkflowExecution execution = workflowExecutionRepository.findByTransactionId(processId)
                 .orElse(null);
         if (execution == null) {
-            log.warn("WithdrawCompletedConsumer - Workflow execution not found for processId={}", processId);
+            log.warn("WithdrawCompletedConsumer - workflow execution missing - processId={}", processId);
             return;
         }
         UUID ownerId = execution.getOwnerId();
         if (ownerId == null) {
-            log.warn("WithdrawCompletedConsumer - OwnerId missing for processId={}", processId);
+            log.warn("WithdrawCompletedConsumer - ownerId missing - processId={}", processId);
             return;
         }
 
         WorkflowContext context = buildContext(processId, ownerId);
         orchestrator.resume(execution.getId(), workflow, context);
-        log.info("WithdrawCompletedConsumer - Workflow resumed after withdraw completion processId={} executionId={}", processId, execution.getId());
+        log.info(
+                "WithdrawCompletedConsumer - workflow resumed - processId={} executionId={}",
+                processId,
+                execution.getId()
+        );
     }
 
     private WorkflowContext buildContext(UUID processId, UUID ownerId) {

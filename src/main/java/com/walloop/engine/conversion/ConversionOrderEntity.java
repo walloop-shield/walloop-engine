@@ -1,7 +1,9 @@
-package com.walloop.engine.fixedfloat;
+package com.walloop.engine.conversion;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -10,8 +12,8 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "fixedfloat_order", schema = "engine")
-public class FixedFloatOrderEntity {
+@Table(name = "conversion_order", schema = "engine")
+public class ConversionOrderEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -20,11 +22,15 @@ public class FixedFloatOrderEntity {
     @Column(nullable = false)
     private UUID processId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String orderId;
+    private ConversionPartner partner;
 
     @Column(nullable = false)
-    private String orderToken;
+    private String partnerOrderId;
+
+    @Column(nullable = false)
+    private String partnerOrderToken;
 
     @Column
     private String status;
@@ -98,20 +104,28 @@ public class FixedFloatOrderEntity {
         this.processId = processId;
     }
 
-    public String getOrderId() {
-        return orderId;
+    public ConversionPartner getPartner() {
+        return partner;
     }
 
-    public void setOrderId(String orderId) {
-        this.orderId = orderId;
+    public void setPartner(ConversionPartner partner) {
+        this.partner = partner;
     }
 
-    public String getOrderToken() {
-        return orderToken;
+    public String getPartnerOrderId() {
+        return partnerOrderId;
     }
 
-    public void setOrderToken(String orderToken) {
-        this.orderToken = orderToken;
+    public void setPartnerOrderId(String partnerOrderId) {
+        this.partnerOrderId = partnerOrderId;
+    }
+
+    public String getPartnerOrderToken() {
+        return partnerOrderToken;
+    }
+
+    public void setPartnerOrderToken(String partnerOrderToken) {
+        this.partnerOrderToken = partnerOrderToken;
     }
 
     public String getStatus() {

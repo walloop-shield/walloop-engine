@@ -9,13 +9,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class WithdrawRequestPublisher {
 
-    private static final String DESTINATION_SIDESHIFT = "SIDESHIFT";
-    public static final String DESTINATION_WALLOOP = "WALLOOP";
+    private static final String DESTINATION_TO_LIQUID_NETWORK = "TO_LIQUID_NETWORK";
+    public static final String DESTINATION_TO_PRINCIPAL_WALLET = "TO_PRINCIPAL_WALLET";
 
     private final RabbitTemplate withdrawRabbitTemplate;
 
     public void publish(UUID processId) {
-        publish(processId, DESTINATION_SIDESHIFT);
+        publish(processId, DESTINATION_TO_LIQUID_NETWORK);
     }
 
     public void publish(UUID processId, String destination) {

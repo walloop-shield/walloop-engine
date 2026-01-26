@@ -5,6 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walloop.engine.network.NetworkAssetService;
 import com.walloop.engine.onboarding.LoginSessionEntity;
 import com.walloop.engine.onboarding.LoginSessionRepository;
+import com.walloop.engine.swap.SwapOrderEntity;
+import com.walloop.engine.swap.SwapOrderRepository;
+import com.walloop.engine.swap.SwapOrderStatus;
+import com.walloop.engine.swap.SwapPartner;
+import com.walloop.engine.swap.SwapStatusScheduler;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +24,8 @@ public class SideShiftSwapService {
 
     private final SideShiftClient client;
     private final SideShiftProperties properties;
-    private final SideShiftShiftRepository shiftRepository;
-    private final SideShiftStatusScheduler statusScheduler;
+    private final SwapOrderRepository orderRepository;
+    private final SwapStatusScheduler statusScheduler;
     private final ObjectMapper objectMapper;
     private final LoginSessionRepository loginSessionRepository;
     private final NetworkAssetService networkAssetService;
@@ -59,18 +64,19 @@ public class SideShiftSwapService {
             SideShiftCreateVariableShiftRequest request,
             SideShiftShiftResponse response
     ) {
-        SideShiftShiftEntity entity = new SideShiftShiftEntity();
+        SwapOrderEntity entity = new SwapOrderEntity();
         entity.setProcessId(processId);
-        entity.setShiftId(response.id());
+        entity.setPartner(SwapPartner.SIDESHIFT);
+        entity.setPartnerOrderId(response.id());
         entity.setDepositAddress(response.depositAddress());
         entity.setDepositNetwork(response.depositNetwork());
         entity.setUserIp(userIp);
-        entity.setStatus(SideShiftShiftStatus.CREATED);
+        entity.setStatus(SwapOrderStatus.CREATED);
         entity.setRequestPayload(toJson(request));
         entity.setResponsePayload(toJson(response));
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
-        shiftRepository.save(entity);
+        orderRepository.save(entity);
         statusScheduler.ensurePolling();
     }
 

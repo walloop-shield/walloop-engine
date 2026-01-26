@@ -14,16 +14,16 @@ Step order:
 2) `calculate_fees`: calculates fees (placeholder).
 3) `create_liquid_wallet`: creates liquid wallet using `walloop-liquid-node`.
 4) `create_lightning_invoice`: creates LN invoice using `walloop-lightning-node`.
-5) `swap_to_liquid`: creates SideShift swap + requests withdraw in `walloop-core` (waits for confirmation).
-6) `pay_liquid_to_lightning`: creates Boltz swap and sends L-BTC to lockup.
-7) `convert_lightning_to_walloop`: uses FixedFloat to send to a new destination wallet.
+5) `swap_to_liquid`: creates swap via partner + requests withdraw in `walloop-core` (waits for confirmation).
+6) `pay_liquid_to_lightning`: creates lightning swap via partner and sends L-BTC to lockup.
+7) `convert_lightning_to_walloop`: uses conversion partner (FixedFloat) to send to a new destination wallet.
 8) `return_to_main_wallet`: requests withdraw to the customer main wallet.
 
 ## Messaging (RabbitMQ)
 Engine consumers:
 - `transaction.engine.queue` (routing key `engine.initialization`): starts workflow via `TransactionStartMessage` (processId, ownerId, sessionToken).
 - `engine.deposit.queue` (routing key `monitor.detected`): `DepositDetectedMessage` (processId) resumes the workflow.
-- `engine.withdraw.queue` (routing key `balance.sent`): `WithdrawCompletedMessage` (processId) updates SideShift/Withdrawal and resumes workflow.
+- `engine.withdraw.queue` (routing key `balance.sent`): `WithdrawCompletedMessage` (processId) updates swap order/Withdrawal and resumes workflow.
 
 Engine publishes (to core):
 - `monitor.waiting` with `DepositMonitorMessage` (address, network, owner, processId).
@@ -43,18 +43,18 @@ Exchange/queue config:
   - `default-requeue-rejected=false` so failures after retries go to DLQ
 
 ## External integrations
-- SideShift: `SideShift*` (swap to Liquid).
-- FixedFloat: `FixedFloat*` (conversion + send to destination wallet).
-- Boltz: `Boltz*` (pay LN via L-BTC).
+- Swap (partner): `Swap*` + `SideShift*` (swap to Liquid).
+- Conversion partner: `Conversion*` + `FixedFloat*` (conversion + send to destination wallet).
+- Lightning swap partner: `LightningSwap*` + `Boltz*` (pay LN via L-BTC).
 - Liquid RPC: `liquid.rpc.*` (Liquid node) `walloop-liquid-node`.
 - LND gRPC: `org.tbk.lightning.lnd.grpc.*` (create invoice) `walloop-lightning-node`.
 - Wallet (network catalog): Feign `WalletNetworkClient` at `/v1/chains` using `walloop.wallet.base-url`.
 
 ## Schedulers
 Resume workflows when external status changes:
-- `FixedFloatStatusScheduler`
-- `SideShiftStatusScheduler`
-- `BoltzStatusScheduler`
+- `ConversionStatusScheduler`
+- `SwapStatusScheduler`
+- `LightningSwapStatusScheduler`
 
 ## Key config (application.yml)
 - Postgres: `SPRING_DATASOURCE_*`, schema `engine`.

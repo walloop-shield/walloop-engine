@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walloop.engine.lightning.LightningInvoiceEntity;
 import com.walloop.engine.lightning.LightningInvoiceRepository;
 import com.walloop.engine.lightning.LightningInvoiceStatus;
+import com.walloop.engine.lightning.swap.LightningSwapStatusPoller;
 import com.walloop.engine.transaction.dto.WalletTransactionDetails;
 import com.walloop.engine.transaction.service.WalletTransactionQueryService;
 import com.walloop.engine.workflow.WorkflowContext;
@@ -13,14 +14,11 @@ import com.walloop.engine.workflow.WorkflowExecutionRepository;
 import com.walloop.engine.workflow.WorkflowOrchestrator;
 import com.walloop.engine.workflow.walloop.WalloopEngineWorkflow;
 import com.walloop.engine.workflow.walloop.WalloopWorkflowContextKeys;
-import jakarta.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lightningj.lnd.wrapper.SynchronousLndAPI;
@@ -31,14 +29,14 @@ import org.lightningj.lnd.wrapper.message.PayReq;
 import org.lightningj.lnd.wrapper.message.PaymentHash;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class BoltzStatusScheduler {
+public class BoltzStatusPoller implements LightningSwapStatusPoller {
+
+    private static final String PARTNER = "BOLTZ";
 
     private final BoltzClient boltzClient;
     private final LightningInvoiceRepository lightningInvoiceRepository;
@@ -48,51 +46,22 @@ public class BoltzStatusScheduler {
     private final ObjectProvider<WalloopEngineWorkflow> workflowProvider;
     private final ObjectMapper objectMapper;
     private final SynchronousLndAPI lndApi;
-    private final TaskScheduler taskScheduler;
+
     @Value("${boltz.paid-status:invoice.paid}")
     private String paidStatus;
-    @Value("${boltz.status-cron:0 * * * * *}")
-    private String statusCron;
-    @Value("${walloop.engine.scheduler.enabled:true}")
-    private boolean schedulerEnabled;
 
-    private final AtomicBoolean running = new AtomicBoolean(false);
-    private ScheduledFuture<?> scheduled;
-
-    @PostConstruct
-    void startIfPending() {
-        if (!schedulerEnabled) {
-            return;
-        }
-        if (lightningInvoiceRepository.existsByBoltzSwapIdIsNotNullAndStatusNot(LightningInvoiceStatus.PAID)) {
-            ensurePolling();
-        }
+    @Override
+    public boolean hasPending() {
+        return lightningInvoiceRepository.existsBySwapPartnerAndSwapIdIsNotNullAndStatusNot(
+                PARTNER,
+                LightningInvoiceStatus.PAID
+        );
     }
 
-    public void ensurePolling() {
-        if (scheduled != null && !scheduled.isCancelled()) {
-            return;
-        }
-        scheduled = taskScheduler.schedule(this::pollSafely, new CronTrigger(statusCron));
-    }
-
-    void pollSafely() {
-        if (!running.compareAndSet(false, true)) {
-            return;
-        }
-        try {
-            boolean hasPending = pollBoltzStatuses();
-            if (!hasPending) {
-                stopPolling();
-            }
-        } finally {
-            running.set(false);
-        }
-    }
-
-    boolean pollBoltzStatuses() {
+    @Override
+    public boolean poll() {
         List<LightningInvoiceEntity> invoices = lightningInvoiceRepository
-                .findByBoltzSwapIdIsNotNullAndStatusNot(LightningInvoiceStatus.PAID);
+                .findBySwapPartnerAndSwapIdIsNotNullAndStatusNot(PARTNER, LightningInvoiceStatus.PAID);
         if (invoices.isEmpty()) {
             return false;
         }
@@ -100,17 +69,17 @@ public class BoltzStatusScheduler {
         boolean pendingLeft = false;
         for (LightningInvoiceEntity invoice : invoices) {
             try {
-                BoltzSwapStatusResponse response = boltzClient.getSwapStatus(invoice.getBoltzSwapId());
+                BoltzSwapStatusResponse response = boltzClient.getSwapStatus(invoice.getSwapId());
                 if (response != null) {
-                    invoice.setBoltzStatus(response.status());
-                    invoice.setBoltzStatusPayload(toJson(response));
+                    invoice.setSwapStatus(response.status());
+                    invoice.setSwapStatusPayload(toJson(response));
                     invoice.setUpdatedAt(OffsetDateTime.now());
 
                     if (isPaid(response)) {
                         boolean paidAmountUpdated = enrichPaidTransaction(invoice);
                         if (paidAmountUpdated) {
                             invoice.setStatus(LightningInvoiceStatus.PAID);
-                            invoice.setBoltzPaidAt(OffsetDateTime.now());
+                            invoice.setSwapPaidAt(OffsetDateTime.now());
                             lightningInvoiceRepository.save(invoice);
                             resumeWorkflow(invoice.getProcessId());
                         } else {
@@ -125,18 +94,16 @@ public class BoltzStatusScheduler {
                     pendingLeft = true;
                 }
             } catch (Exception e) {
-                log.warn("BoltzStatusScheduler - Failed to poll Boltz status for swapId={}", invoice.getBoltzSwapId(), e);
+                log.warn(
+                        "BoltzStatusPoller - status poll failed - swapId={} processId={}",
+                        invoice.getSwapId(),
+                        invoice.getProcessId(),
+                        e
+                );
                 pendingLeft = true;
             }
         }
         return pendingLeft;
-    }
-
-    private void stopPolling() {
-        if (scheduled != null) {
-            scheduled.cancel(false);
-            scheduled = null;
-        }
     }
 
     private boolean isPaid(BoltzSwapStatusResponse response) {
@@ -166,11 +133,15 @@ public class BoltzStatusScheduler {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("decodePayReq", buildPayReqPayload(payReq));
             payload.put("lookupInvoice", buildLookupPayload(lookup));
-            invoice.setBoltzDecodedTransactionPayload(toJson(payload));
-            invoice.setBoltzPaidAmountSats(paidAmountSats);
+            invoice.setSwapDecodedTransactionPayload(toJson(payload));
+            invoice.setSwapPaidAmountSats(paidAmountSats);
             return true;
         } catch (StatusException | ValidationException e) {
-            log.warn("BoltzStatusScheduler - Failed to lookup LND invoice for swapId={}", invoice.getBoltzSwapId(), e);
+            log.warn(
+                    "BoltzStatusPoller - invoice lookup failed - swapId={}",
+                    invoice.getSwapId(),
+                    e
+            );
             return false;
         }
     }
@@ -233,19 +204,23 @@ public class BoltzStatusScheduler {
         WorkflowExecution execution = workflowExecutionRepository.findByTransactionId(processId)
                 .orElse(null);
         if (execution == null) {
-            log.warn("BoltzStatusScheduler - Workflow execution not found for processId={}", processId);
+            log.warn("BoltzStatusPoller - workflow execution missing - processId={}", processId);
             return;
         }
         UUID ownerId = execution.getOwnerId();
         if (ownerId == null) {
-            log.warn("BoltzStatusScheduler - OwnerId missing for processId={}", processId);
+            log.warn("BoltzStatusPoller - ownerId missing - processId={}", processId);
             return;
         }
 
         WorkflowContext context = buildContext(processId, ownerId);
         WalloopEngineWorkflow workflow = workflowProvider.getObject();
         orchestrator.resume(execution.getId(), workflow, context);
-        log.info("BoltzStatusScheduler - Workflow resumed after Boltz payment processId={} executionId={}", processId, execution.getId());
+        log.info(
+                "BoltzStatusPoller - workflow resumed - processId={} executionId={}",
+                processId,
+                execution.getId()
+        );
     }
 
     private WorkflowContext buildContext(UUID processId, UUID ownerId) {

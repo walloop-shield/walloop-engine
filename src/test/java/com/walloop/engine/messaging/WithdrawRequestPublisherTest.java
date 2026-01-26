@@ -28,6 +28,6 @@ class WithdrawRequestPublisherTest {
         );
         WithdrawRequestMessage message = messageCaptor.getValue();
         assertThat(message.processId()).isEqualTo(processId);
-        assertThat(message.destination()).isEqualTo("SIDESHIFT");
+        assertThat(message.destination()).isEqualTo("TO_LIQUID_NETWORK");
     }
 }

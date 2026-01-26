@@ -1,12 +1,13 @@
 package com.walloop.engine.lightning;
 
 import com.walloop.engine.fee.FxRateProvider;
-import com.walloop.engine.boltz.BoltzSwapFeeService;
 import com.walloop.engine.liquid.entity.LiquidWalletEntity;
 import com.walloop.engine.liquid.repository.LiquidWalletRepository;
 import com.walloop.engine.liquid.service.LiquidRpcService;
-import com.walloop.engine.sideshift.SideShiftPairSimulationEntity;
-import com.walloop.engine.sideshift.SideShiftPairSimulationRepository;
+import com.walloop.engine.swap.SwapQuoteEntity;
+import com.walloop.engine.swap.SwapQuoteRepository;
+import com.walloop.engine.lightning.swap.LightningSwapFeeProvider;
+import com.walloop.engine.lightning.swap.LightningSwapFeeQuote;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -33,9 +34,9 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     private final SynchronousLndAPI lndApi;
     private final LiquidWalletRepository liquidWalletRepository;
     private final LiquidRpcService liquidRpcService;
-    private final SideShiftPairSimulationRepository pairSimulationRepository;
+    private final SwapQuoteRepository swapQuoteRepository;
     private final FxRateProvider fxRateProvider;
-    private final BoltzSwapFeeService boltzSwapFeeService;
+    private final LightningSwapFeeProvider lightningSwapFeeProvider;
 
     @Value("${walloop.lightning.invoice-expiry-seconds:7200}")
     private long invoiceExpirySeconds;
@@ -95,9 +96,9 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
         entity.setBalanceMsats(snapshot.balanceMsats());
         entity.setBalanceUsdt(snapshot.balanceUsdt());
         if (snapshot.feeQuote() != null) {
-            entity.setBoltzFeePercentage(snapshot.feeQuote().percentage());
-            entity.setBoltzMinerFees(snapshot.feeQuote().minerFees());
-            entity.setBoltzPairHash(snapshot.feeQuote().hash());
+            entity.setSwapFeePercentage(snapshot.feeQuote().percentage());
+            entity.setSwapMinerFees(snapshot.feeQuote().minerFees());
+            entity.setSwapPairHash(snapshot.feeQuote().pairHash());
         }
         entity.setLiquidFeeSats(snapshot.liquidFeeSats());
         entity.setLiquidFeeConfTarget(LIQUID_FEE_CONF_TARGET);
@@ -154,7 +155,7 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
             throw new IllegalStateException("Liquid balance below estimated transaction fee");
         }
         long spendableSats = balanceSats - feeReserveSats;
-        BoltzSwapFeeService.FeeQuote feeQuote = boltzSwapFeeService.quoteInvoice(spendableSats);
+        LightningSwapFeeQuote feeQuote = lightningSwapFeeProvider.quoteInvoice(spendableSats);
         long invoiceSats = feeQuote.invoiceSats();
         long balanceMsats = BigDecimal.valueOf(invoiceSats)
                 .movePointRight(3)
@@ -174,7 +175,7 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
     }
 
     private BigDecimal resolveUsdtValue(UUID processId, BigDecimal balanceBtc) {
-        Optional<SideShiftPairSimulationEntity> simulation = pairSimulationRepository
+        Optional<SwapQuoteEntity> simulation = swapQuoteRepository
                 .findFirstByProcessIdOrderByCreatedAtDesc(processId);
         if (simulation.isPresent()) {
             BigDecimal usdtFromPair = resolveUsdtFromPair(balanceBtc, simulation.get());
@@ -189,7 +190,7 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
                 .orElseThrow(() -> new IllegalStateException("USDT rate not available for processId=" + processId));
     }
 
-    private BigDecimal resolveUsdtFromPair(BigDecimal balanceBtc, SideShiftPairSimulationEntity simulation) {
+    private BigDecimal resolveUsdtFromPair(BigDecimal balanceBtc, SwapQuoteEntity simulation) {
         String rateValue = simulation.getRate();
         if (rateValue == null || rateValue.isBlank()) {
             return null;
@@ -225,7 +226,7 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
             long balanceSats,
             long balanceMsats,
             String balanceUsdt,
-            BoltzSwapFeeService.FeeQuote feeQuote,
+            LightningSwapFeeQuote feeQuote,
             long liquidFeeSats
     ) {
     }
@@ -234,7 +235,7 @@ public class LightningInvoiceServiceImpl implements LightningInvoiceService {
             String balanceBtc,
             long balanceSats,
             long balanceMsats,
-            BoltzSwapFeeService.FeeQuote feeQuote,
+            LightningSwapFeeQuote feeQuote,
             long liquidFeeSats
     ) {
     }

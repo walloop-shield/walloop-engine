@@ -41,22 +41,25 @@ public class LightningInvoiceEntity {
     private String balanceUsdt;
 
     @Column
-    private String boltzSwapId;
+    private String swapPartner;
+
+    @Column(name = "swap_id")
+    private String swapId;
 
     @Column
-    private String boltzLockupAddress;
+    private String swapLockupAddress;
 
     @Column
-    private Long boltzExpectedAmount;
+    private Long swapExpectedAmount;
 
     @Column
-    private Double boltzFeePercentage;
+    private Double swapFeePercentage;
 
     @Column
-    private Long boltzMinerFees;
+    private Long swapMinerFees;
 
     @Column
-    private String boltzPairHash;
+    private String swapPairHash;
 
     @Column
     private Long liquidFeeSats;
@@ -71,24 +74,24 @@ public class LightningInvoiceEntity {
     private String liquidTxId;
 
     @Column(columnDefinition = "TEXT")
-    private String boltzRequestPayload;
+    private String swapRequestPayload;
 
     @Column(columnDefinition = "TEXT")
-    private String boltzResponsePayload;
+    private String swapResponsePayload;
 
     @Column
-    private String boltzStatus;
+    private String swapStatus;
 
     @Column(columnDefinition = "TEXT")
-    private String boltzDecodedTransactionPayload;
+    private String swapDecodedTransactionPayload;
 
     @Column
-    private Long boltzPaidAmountSats;
+    private Long swapPaidAmountSats;
 
     @Column(columnDefinition = "TEXT")
-    private String boltzStatusPayload;
+    private String swapStatusPayload;
 
-    private OffsetDateTime boltzPaidAt;
+    private OffsetDateTime swapPaidAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -164,52 +167,60 @@ public class LightningInvoiceEntity {
         this.balanceUsdt = balanceUsdt;
     }
 
-    public String getBoltzSwapId() {
-        return boltzSwapId;
+    public String getSwapPartner() {
+        return swapPartner;
     }
 
-    public void setBoltzSwapId(String boltzSwapId) {
-        this.boltzSwapId = boltzSwapId;
+    public void setSwapPartner(String swapPartner) {
+        this.swapPartner = swapPartner;
     }
 
-    public String getBoltzLockupAddress() {
-        return boltzLockupAddress;
+    public String getSwapId() {
+        return swapId;
     }
 
-    public void setBoltzLockupAddress(String boltzLockupAddress) {
-        this.boltzLockupAddress = boltzLockupAddress;
+    public void setSwapId(String swapId) {
+        this.swapId = swapId;
     }
 
-    public Long getBoltzExpectedAmount() {
-        return boltzExpectedAmount;
+    public String getSwapLockupAddress() {
+        return swapLockupAddress;
     }
 
-    public void setBoltzExpectedAmount(Long boltzExpectedAmount) {
-        this.boltzExpectedAmount = boltzExpectedAmount;
+    public void setSwapLockupAddress(String swapLockupAddress) {
+        this.swapLockupAddress = swapLockupAddress;
     }
 
-    public Double getBoltzFeePercentage() {
-        return boltzFeePercentage;
+    public Long getSwapExpectedAmount() {
+        return swapExpectedAmount;
     }
 
-    public void setBoltzFeePercentage(Double boltzFeePercentage) {
-        this.boltzFeePercentage = boltzFeePercentage;
+    public void setSwapExpectedAmount(Long swapExpectedAmount) {
+        this.swapExpectedAmount = swapExpectedAmount;
     }
 
-    public Long getBoltzMinerFees() {
-        return boltzMinerFees;
+    public Double getSwapFeePercentage() {
+        return swapFeePercentage;
     }
 
-    public void setBoltzMinerFees(Long boltzMinerFees) {
-        this.boltzMinerFees = boltzMinerFees;
+    public void setSwapFeePercentage(Double swapFeePercentage) {
+        this.swapFeePercentage = swapFeePercentage;
     }
 
-    public String getBoltzPairHash() {
-        return boltzPairHash;
+    public Long getSwapMinerFees() {
+        return swapMinerFees;
     }
 
-    public void setBoltzPairHash(String boltzPairHash) {
-        this.boltzPairHash = boltzPairHash;
+    public void setSwapMinerFees(Long swapMinerFees) {
+        this.swapMinerFees = swapMinerFees;
+    }
+
+    public String getSwapPairHash() {
+        return swapPairHash;
+    }
+
+    public void setSwapPairHash(String swapPairHash) {
+        this.swapPairHash = swapPairHash;
     }
 
     public Long getLiquidFeeSats() {
@@ -244,60 +255,60 @@ public class LightningInvoiceEntity {
         this.liquidTxId = liquidTxId;
     }
 
-    public String getBoltzRequestPayload() {
-        return boltzRequestPayload;
+    public String getSwapRequestPayload() {
+        return swapRequestPayload;
     }
 
-    public void setBoltzRequestPayload(String boltzRequestPayload) {
-        this.boltzRequestPayload = boltzRequestPayload;
+    public void setSwapRequestPayload(String swapRequestPayload) {
+        this.swapRequestPayload = swapRequestPayload;
     }
 
-    public String getBoltzResponsePayload() {
-        return boltzResponsePayload;
+    public String getSwapResponsePayload() {
+        return swapResponsePayload;
     }
 
-    public void setBoltzResponsePayload(String boltzResponsePayload) {
-        this.boltzResponsePayload = boltzResponsePayload;
+    public void setSwapResponsePayload(String swapResponsePayload) {
+        this.swapResponsePayload = swapResponsePayload;
     }
 
-    public String getBoltzStatus() {
-        return boltzStatus;
+    public String getSwapStatus() {
+        return swapStatus;
     }
 
-    public void setBoltzStatus(String boltzStatus) {
-        this.boltzStatus = boltzStatus;
+    public void setSwapStatus(String swapStatus) {
+        this.swapStatus = swapStatus;
     }
 
-    public String getBoltzDecodedTransactionPayload() {
-        return boltzDecodedTransactionPayload;
+    public String getSwapDecodedTransactionPayload() {
+        return swapDecodedTransactionPayload;
     }
 
-    public void setBoltzDecodedTransactionPayload(String boltzDecodedTransactionPayload) {
-        this.boltzDecodedTransactionPayload = boltzDecodedTransactionPayload;
+    public void setSwapDecodedTransactionPayload(String swapDecodedTransactionPayload) {
+        this.swapDecodedTransactionPayload = swapDecodedTransactionPayload;
     }
 
-    public Long getBoltzPaidAmountSats() {
-        return boltzPaidAmountSats;
+    public Long getSwapPaidAmountSats() {
+        return swapPaidAmountSats;
     }
 
-    public void setBoltzPaidAmountSats(Long boltzPaidAmountSats) {
-        this.boltzPaidAmountSats = boltzPaidAmountSats;
+    public void setSwapPaidAmountSats(Long swapPaidAmountSats) {
+        this.swapPaidAmountSats = swapPaidAmountSats;
     }
 
-    public String getBoltzStatusPayload() {
-        return boltzStatusPayload;
+    public String getSwapStatusPayload() {
+        return swapStatusPayload;
     }
 
-    public void setBoltzStatusPayload(String boltzStatusPayload) {
-        this.boltzStatusPayload = boltzStatusPayload;
+    public void setSwapStatusPayload(String swapStatusPayload) {
+        this.swapStatusPayload = swapStatusPayload;
     }
 
-    public OffsetDateTime getBoltzPaidAt() {
-        return boltzPaidAt;
+    public OffsetDateTime getSwapPaidAt() {
+        return swapPaidAt;
     }
 
-    public void setBoltzPaidAt(OffsetDateTime boltzPaidAt) {
-        this.boltzPaidAt = boltzPaidAt;
+    public void setSwapPaidAt(OffsetDateTime swapPaidAt) {
+        this.swapPaidAt = swapPaidAt;
     }
 
     public LightningInvoiceStatus getStatus() {

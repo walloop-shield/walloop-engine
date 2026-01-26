@@ -1,9 +1,9 @@
 package com.walloop.engine.workflow.walloop.steps;
 
-import com.walloop.engine.fixedfloat.FixedFloatOrderEntity;
-import com.walloop.engine.fixedfloat.FixedFloatOrderRepository;
-import com.walloop.engine.fixedfloat.FixedFloatOrderService;
-import com.walloop.engine.fixedfloat.FixedFloatStatusScheduler;
+import com.walloop.engine.conversion.ConversionOrderEntity;
+import com.walloop.engine.conversion.ConversionOrderRepository;
+import com.walloop.engine.conversion.ConversionPartnerService;
+import com.walloop.engine.conversion.ConversionStatusScheduler;
 import com.walloop.engine.lightning.LightningInvoiceEntity;
 import com.walloop.engine.lightning.LightningInvoiceRepository;
 import com.walloop.engine.workflow.StepResult;
@@ -28,9 +28,9 @@ import org.springframework.stereotype.Component;
 public class ConvertLightningToWalloopStep implements WorkflowStep {
 
     private final LightningInvoiceRepository lightningInvoiceRepository;
-    private final FixedFloatOrderService fixedFloatOrderService;
-    private final FixedFloatOrderRepository fixedFloatOrderRepository;
-    private final FixedFloatStatusScheduler fixedFloatStatusScheduler;
+    private final ConversionPartnerService conversionPartnerService;
+    private final ConversionOrderRepository conversionOrderRepository;
+    private final ConversionStatusScheduler conversionStatusScheduler;
     private final SynchronousLndAPI lndApi;
 
     private static final String PAYMENT_STATUS_PAID = "PAID";
@@ -51,12 +51,12 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
 
         LightningInvoiceEntity invoice = lightningInvoiceRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
                 .orElseThrow(() -> new IllegalStateException("Lightning invoice not found"));
-        Long paidAmountSats = invoice.getBoltzPaidAmountSats();
+        Long paidAmountSats = invoice.getSwapPaidAmountSats();
         if (paidAmountSats == null || paidAmountSats <= 0) {
-            throw new IllegalStateException("Boltz paid amount not available");
+            throw new IllegalStateException("Swap partner paid amount not available");
         }
 
-        FixedFloatOrderEntity order = fixedFloatOrderService.createOrGetOrder(
+        ConversionOrderEntity order = conversionPartnerService.createOrGetOrder(
                 processId,
                 chain,
                 destinationAddress,
@@ -66,11 +66,11 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
         if (!PAYMENT_STATUS_PAID.equals(order.getPaymentStatus())) {
             int attempts = order.getPaymentAttempts() == null ? 0 : order.getPaymentAttempts();
             if (attempts >= MAX_PAYMENT_RETRIES) {
-                return StepResult.failed("FixedFloat payment retries exhausted");
+                return StepResult.failed("Conversion partner payment retries exhausted");
             }
             String paymentRequest = order.getPaymentRequest();
             if (paymentRequest == null || paymentRequest.isBlank()) {
-                throw new IllegalStateException("FixedFloat payment request not available");
+                throw new IllegalStateException("Conversion partner payment request not available");
             }
             try {
                 order.setPaymentAttempts(attempts + 1);
@@ -83,33 +83,43 @@ public class ConvertLightningToWalloopStep implements WorkflowStep {
                     order.setPaymentStatus(PAYMENT_STATUS_FAILED);
                     order.setPaymentError(paymentError);
                     order.setUpdatedAt(OffsetDateTime.now());
-                    fixedFloatOrderRepository.save(order);
-                    return StepResult.retry("FixedFloat payment failed [" + paymentError + "]", PAYMENT_RETRY_DELAY);
+                    conversionOrderRepository.save(order);
+                    return StepResult.retry("Conversion partner payment failed [" + paymentError + "]", PAYMENT_RETRY_DELAY);
                 }
                 order.setPaymentStatus(PAYMENT_STATUS_PAID);
                 order.setPaymentPreimage(toHex(response.getPaymentPreimage()));
                 order.setPaymentHash(toHex(response.getPaymentHash()));
                 order.setPaymentCompletedAt(OffsetDateTime.now());
                 order.setUpdatedAt(OffsetDateTime.now());
-                fixedFloatOrderRepository.save(order);
+                conversionOrderRepository.save(order);
             } catch (StatusException | ValidationException e) {
                 order.setPaymentStatus(PAYMENT_STATUS_FAILED);
                 order.setPaymentError(e.getMessage());
                 order.setUpdatedAt(OffsetDateTime.now());
-                fixedFloatOrderRepository.save(order);
-                return StepResult.retry("FixedFloat payment failed", PAYMENT_RETRY_DELAY);
+                conversionOrderRepository.save(order);
+                return StepResult.retry("Conversion partner payment failed", PAYMENT_RETRY_DELAY);
             }
         }
 
-        fixedFloatStatusScheduler.ensurePolling();
+        conversionStatusScheduler.ensurePolling();
 
-        if (fixedFloatOrderService.isCompleted(order)) {
-            log.info("ConvertLightningToWalloopStep - FixedFloat order completed processId={} orderId={}", processId, order.getOrderId());
+        if (conversionPartnerService.isCompleted(order)) {
+            log.info(
+                    "ConvertLightningToWalloopStep - Conversion order completed processId={} orderId={} partner={}",
+                    processId,
+                    order.getPartnerOrderId(),
+                    order.getPartner()
+            );
             return StepResult.completed("Funds sent to destination wallet");
         }
 
-        log.info("ConvertLightningToWalloopStep - FixedFloat order pending processId={} orderId={}", processId, order.getOrderId());
-        return StepResult.waiting("Waiting for FixedFloat confirmation");
+        log.info(
+                "ConvertLightningToWalloopStep - Conversion order pending processId={} orderId={} partner={}",
+                processId,
+                order.getPartnerOrderId(),
+                order.getPartner()
+        );
+        return StepResult.waiting("Waiting for conversion confirmation");
     }
 
     private String toHex(byte[] bytes) {

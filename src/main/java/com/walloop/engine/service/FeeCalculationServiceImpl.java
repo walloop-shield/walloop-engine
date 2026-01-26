@@ -6,15 +6,16 @@ import com.walloop.engine.core.DepositWatchRepository;
 import com.walloop.engine.core.WithdrawalTransactionRepository;
 import com.walloop.engine.fee.FeeCalculationEntity;
 import com.walloop.engine.fee.FeeCalculationRepository;
-import com.walloop.engine.fixedfloat.FixedFloatOrderEntity;
-import com.walloop.engine.fixedfloat.FixedFloatOrderRepository;
+import com.walloop.engine.conversion.ConversionOrderEntity;
+import com.walloop.engine.conversion.ConversionOrderRepository;
+import com.walloop.engine.conversion.ConversionPartner;
 import com.walloop.engine.liquid.entity.LiquidWalletEntity;
 import com.walloop.engine.liquid.repository.LiquidWalletRepository;
 import com.walloop.engine.fee.FxRateProvider;
 import com.walloop.engine.fee.FxRateSnapshot;
 import com.walloop.engine.network.NetworkAssetService;
-import com.walloop.engine.sideshift.SideShiftPairSimulationEntity;
-import com.walloop.engine.sideshift.SideShiftPairSimulationRepository;
+import com.walloop.engine.swap.SwapQuoteEntity;
+import com.walloop.engine.swap.SwapQuoteRepository;
 import com.walloop.engine.transaction.dto.WalletTransactionDetails;
 import com.walloop.engine.transaction.service.WalletTransactionQueryService;
 import java.math.BigDecimal;
@@ -41,8 +42,8 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
     private static final BigDecimal SATS_PER_BTC = new BigDecimal("100000000");
 
     private final DepositWatchRepository depositWatchRepository;
-    private final SideShiftPairSimulationRepository pairSimulationRepository;
-    private final FixedFloatOrderRepository fixedFloatOrderRepository;
+    private final SwapQuoteRepository swapQuoteRepository;
+    private final ConversionOrderRepository conversionOrderRepository;
     private final FeeCalculationRepository feeCalculationRepository;
     private final WithdrawalTransactionRepository withdrawalTransactionRepository;
     private final NetworkAssetService networkAssetService;
@@ -159,12 +160,13 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
     }
 
     private BigDecimal resolveUsdRate(UUID processId) {
-        Optional<SideShiftPairSimulationEntity> simulation = pairSimulationRepository
+        Optional<SwapQuoteEntity> simulation = swapQuoteRepository
                 .findFirstByProcessIdOrderByCreatedAtDesc(processId);
         if (simulation.isPresent()) {
-            String rateValue = simulation.get().getRate();
-            String fromCoin = simulation.get().getFromCoin();
-            String toCoin = simulation.get().getToCoin();
+            SwapQuoteEntity quote = simulation.get();
+            String rateValue = quote.getRate();
+            String fromCoin = quote.getFromCoin();
+            String toCoin = quote.getToCoin();
             if (rateValue != null && !rateValue.isBlank() && fromCoin != null && toCoin != null) {
                 BigDecimal rate = new BigDecimal(rateValue);
                 if ("btc".equalsIgnoreCase(fromCoin) && "usdt".equalsIgnoreCase(toCoin)) {
@@ -176,7 +178,8 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
             }
         }
 
-        Optional<FixedFloatOrderEntity> order = fixedFloatOrderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId);
+        Optional<ConversionOrderEntity> order = conversionOrderRepository
+                .findFirstByProcessIdAndPartnerOrderByCreatedAtDesc(processId, ConversionPartner.FIXEDFLOAT);
         if (order.isPresent() && order.get().getAmount() != null) {
             if ("USDT".equalsIgnoreCase(order.get().getToCcy())) {
                 BigDecimal amountBtc = new BigDecimal(order.get().getAmount());
@@ -318,10 +321,16 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
                 .ifPresent(tx -> payload.put("context", buildContext(tx)));
         liquidWalletRepository.findFirstByTransactionIdOrderByCreatedAtDesc(processId)
                 .ifPresent(wallet -> payload.put("liquidWallet", buildLiquidWalletPayload(wallet)));
-        pairSimulationRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
-                .ifPresent(simulation -> payload.put("sideshiftPair", simulation));
-        fixedFloatOrderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
-                .ifPresent(order -> payload.put("fixedfloatOrder", order));
+        swapQuoteRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
+                .ifPresent(quote -> {
+                    payload.put("swapQuote", quote);
+                    payload.put("sideshiftPair", quote);
+                });
+        conversionOrderRepository.findFirstByProcessIdAndPartnerOrderByCreatedAtDesc(processId, ConversionPartner.FIXEDFLOAT)
+                .ifPresent(order -> {
+                    payload.put("conversionOrder", order);
+                    payload.put("fixedfloatOrder", order);
+                });
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (Exception e) {

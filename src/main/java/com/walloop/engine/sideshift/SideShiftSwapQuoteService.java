@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walloop.engine.core.DepositWatchEntity;
 import com.walloop.engine.core.DepositWatchRepository;
 import com.walloop.engine.network.NetworkAssetService;
+import com.walloop.engine.swap.SwapPartner;
+import com.walloop.engine.swap.SwapQuoteEntity;
+import com.walloop.engine.swap.SwapQuoteRepository;
+import com.walloop.engine.swap.SwapQuoteService;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -13,17 +17,18 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class SideShiftPairSimulationService {
+public class SideShiftSwapQuoteService implements SwapQuoteService {
 
     private final SideShiftClient client;
     private final SideShiftProperties properties;
-    private final SideShiftPairSimulationRepository repository;
+    private final SwapQuoteRepository repository;
     private final ObjectMapper objectMapper;
     private final DepositWatchRepository depositWatchRepository;
     private final NetworkAssetService networkAssetService;
 
-    public void ensureSimulation(UUID processId, String network, String depositNetwork) {
-        if (repository.findFirstByProcessIdOrderByCreatedAtDesc(processId).isPresent()) {
+    @Override
+    public void ensureQuote(UUID processId, String network, String depositNetwork) {
+        if (repository.findFirstByProcessIdAndPartnerOrderByCreatedAtDesc(processId, SwapPartner.SIDESHIFT).isPresent()) {
             return;
         }
 
@@ -50,8 +55,9 @@ public class SideShiftPairSimulationService {
 
         Map<String, Object> response = client.getPair(secret, affiliateId, fromCoin, toCoin);
 
-        SideShiftPairSimulationEntity entity = new SideShiftPairSimulationEntity();
+        SwapQuoteEntity entity = new SwapQuoteEntity();
         entity.setProcessId(processId);
+        entity.setPartner(SwapPartner.SIDESHIFT);
         entity.setFromCoin(fromCoin);
         entity.setFromNetwork(fromNetwork);
         entity.setToCoin(toCoin);
@@ -70,6 +76,7 @@ public class SideShiftPairSimulationService {
                 "from", fromCoin,
                 "to", toCoin
         )));
+        entity.setResponsePayload(toJson(response));
         entity.setCreatedAt(OffsetDateTime.now());
         repository.save(entity);
     }
