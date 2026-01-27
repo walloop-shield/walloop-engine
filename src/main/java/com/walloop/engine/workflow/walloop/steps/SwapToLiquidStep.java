@@ -64,7 +64,7 @@ public class SwapToLiquidStep implements WorkflowStep {
                 );
                 SwapToLiquidResult shift = swapToLiquidPartner.createSwap(request);
 
-                context.put(WalloopWorkflowContextKeys.SWAP_ID, shift.id());
+                context.put(WalloopWorkflowContextKeys.SWAP_ID, shift.swapId());
                 context.put(WalloopWorkflowContextKeys.SWAP_DEPOSIT_ADDRESS, shift.depositAddress());
 
                 log.info(

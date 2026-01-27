@@ -2,18 +2,18 @@ package com.walloop.engine.workflow.walloop.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.walloop.engine.messaging.WithdrawRequestPublisher;
-import com.walloop.engine.sideshift.SideShiftPairSimulationService;
-import com.walloop.engine.sideshift.SideShiftShiftEntity;
-import com.walloop.engine.sideshift.SideShiftShiftRepository;
-import com.walloop.engine.sideshift.SideShiftShiftResponse;
-import com.walloop.engine.sideshift.SideShiftShiftStatus;
-import com.walloop.engine.sideshift.SideShiftSwapService;
+import com.walloop.engine.swap.SwapOrderEntity;
+import com.walloop.engine.swap.SwapOrderRepository;
+import com.walloop.engine.swap.SwapOrderStatus;
+import com.walloop.engine.swap.SwapPartner;
+import com.walloop.engine.swap.SwapQuoteService;
+import com.walloop.engine.swap.SwapToLiquidPartner;
+import com.walloop.engine.swap.SwapToLiquidResult;
 import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.StepStatus;
 import com.walloop.engine.workflow.WorkflowContext;
@@ -29,24 +29,24 @@ import org.mockito.Mockito;
 
 class SwapToLiquidStepTest {
 
-    private SideShiftSwapService sideShiftSwapService;
-    private SideShiftShiftRepository shiftRepository;
-    private SideShiftPairSimulationService pairSimulationService;
+    private SwapToLiquidPartner swapToLiquidPartner;
+    private SwapOrderRepository orderRepository;
+    private SwapQuoteService swapQuoteService;
     private WithdrawRequestPublisher withdrawRequestPublisher;
     private WorkflowExecutionRepository executionRepository;
     private SwapToLiquidStep step;
 
     @BeforeEach
     void setUp() {
-        sideShiftSwapService = Mockito.mock(SideShiftSwapService.class);
-        shiftRepository = Mockito.mock(SideShiftShiftRepository.class);
-        pairSimulationService = Mockito.mock(SideShiftPairSimulationService.class);
+        swapToLiquidPartner = Mockito.mock(SwapToLiquidPartner.class);
+        orderRepository = Mockito.mock(SwapOrderRepository.class);
+        swapQuoteService = Mockito.mock(SwapQuoteService.class);
         withdrawRequestPublisher = Mockito.mock(WithdrawRequestPublisher.class);
         executionRepository = Mockito.mock(WorkflowExecutionRepository.class);
         step = new SwapToLiquidStep(
-                sideShiftSwapService,
-                shiftRepository,
-                pairSimulationService,
+                swapToLiquidPartner,
+                orderRepository,
+                swapQuoteService,
                 withdrawRequestPublisher,
                 executionRepository
         );
@@ -57,7 +57,7 @@ class SwapToLiquidStepTest {
         UUID processId = UUID.randomUUID();
         WorkflowContext context = baseContext(processId);
 
-        SideShiftShiftResponse response = new SideShiftShiftResponse(
+        SwapToLiquidResult response = new SwapToLiquidResult(
                 "shift-1",
                 "deposit-addr",
                 "btc",
@@ -66,36 +66,32 @@ class SwapToLiquidStepTest {
                 "liquid"
         );
 
-        SideShiftShiftEntity entity = new SideShiftShiftEntity();
+        SwapOrderEntity entity = new SwapOrderEntity();
         entity.setProcessId(processId);
-        entity.setShiftId("shift-1");
+        entity.setPartner(SwapPartner.SIDESHIFT);
+        entity.setPartnerOrderId("shift-1");
         entity.setDepositAddress("deposit-addr");
-        entity.setStatus(SideShiftShiftStatus.CREATED);
+        entity.setStatus(SwapOrderStatus.CREATED);
+        entity.setRequestPayload("{}");
+        entity.setResponsePayload("{}");
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
 
-        when(shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId))
+        when(orderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId))
                 .thenReturn(Optional.empty(), Optional.of(entity));
-        when(sideShiftSwapService.swapToLiquid(
-                eq("btc"),
-                eq("btc"),
-                eq("liquid-addr"),
-                eq("tx-addr"),
-                eq(processId),
-                eq("session-token")
-        ))
+        when(swapToLiquidPartner.createSwap(any()))
                 .thenReturn(response);
 
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.WAITING);
-        verify(pairSimulationService).ensureSimulation(processId, "btc", "btc");
+        verify(swapQuoteService).ensureQuote(processId, "btc", "btc");
         verify(withdrawRequestPublisher).publish(processId);
 
-        ArgumentCaptor<SideShiftShiftEntity> captor = ArgumentCaptor.forClass(SideShiftShiftEntity.class);
-        verify(shiftRepository).save(captor.capture());
-        SideShiftShiftEntity saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo(SideShiftShiftStatus.WITHDRAW_REQUESTED);
+        ArgumentCaptor<SwapOrderEntity> captor = ArgumentCaptor.forClass(SwapOrderEntity.class);
+        verify(orderRepository).save(captor.capture());
+        SwapOrderEntity saved = captor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(SwapOrderStatus.WITHDRAW_REQUESTED);
         assertThat(saved.getWithdrawRequestedAt()).isNotNull();
     }
 
@@ -104,21 +100,24 @@ class SwapToLiquidStepTest {
         UUID processId = UUID.randomUUID();
         WorkflowContext context = baseContext(processId);
 
-        SideShiftShiftEntity entity = new SideShiftShiftEntity();
+        SwapOrderEntity entity = new SwapOrderEntity();
         entity.setProcessId(processId);
-        entity.setStatus(SideShiftShiftStatus.SETTLED);
+        entity.setPartner(SwapPartner.SIDESHIFT);
+        entity.setStatus(SwapOrderStatus.SETTLED);
+        entity.setRequestPayload("{}");
+        entity.setResponsePayload("{}");
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
 
-        when(shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId))
+        when(orderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId))
                 .thenReturn(Optional.of(entity));
 
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.COMPLETED);
-        verify(pairSimulationService).ensureSimulation(processId, "btc", "btc");
+        verify(swapQuoteService).ensureQuote(processId, "btc", "btc");
         verify(withdrawRequestPublisher, never()).publish(any());
-        verify(sideShiftSwapService, never()).swapToLiquid(any(), any(), any(), any(), any(), any());
+        verify(swapToLiquidPartner, never()).createSwap(any());
     }
 
     @Test
@@ -126,22 +125,25 @@ class SwapToLiquidStepTest {
         UUID processId = UUID.randomUUID();
         WorkflowContext context = baseContext(processId);
 
-        SideShiftShiftEntity entity = new SideShiftShiftEntity();
+        SwapOrderEntity entity = new SwapOrderEntity();
         entity.setProcessId(processId);
-        entity.setStatus(SideShiftShiftStatus.WITHDRAW_REQUESTED);
+        entity.setPartner(SwapPartner.SIDESHIFT);
+        entity.setStatus(SwapOrderStatus.WITHDRAW_REQUESTED);
         entity.setWithdrawRequestedAt(OffsetDateTime.now());
+        entity.setRequestPayload("{}");
+        entity.setResponsePayload("{}");
         entity.setCreatedAt(OffsetDateTime.now());
         entity.setUpdatedAt(OffsetDateTime.now());
 
-        when(shiftRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId))
+        when(orderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId))
                 .thenReturn(Optional.of(entity));
 
         StepResult result = step.execute(context);
 
         assertThat(result.status()).isEqualTo(StepStatus.WAITING);
-        verify(pairSimulationService).ensureSimulation(processId, "btc", "btc");
+        verify(swapQuoteService).ensureQuote(processId, "btc", "btc");
         verify(withdrawRequestPublisher, never()).publish(any());
-        verify(shiftRepository, never()).save(any());
+        verify(orderRepository, never()).save(any());
     }
 
     private WorkflowContext baseContext(UUID processId) {

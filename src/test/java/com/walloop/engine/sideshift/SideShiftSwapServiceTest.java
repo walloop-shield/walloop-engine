@@ -9,6 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walloop.engine.network.NetworkAssetService;
 import com.walloop.engine.onboarding.LoginSessionEntity;
 import com.walloop.engine.onboarding.LoginSessionRepository;
+import com.walloop.engine.swap.SwapOrderEntity;
+import com.walloop.engine.swap.SwapOrderRepository;
+import com.walloop.engine.swap.SwapStatusScheduler;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -20,9 +23,9 @@ class SideShiftSwapServiceTest {
     @Test
     void usesUserIpFromLoginSession() {
         SideShiftClient client = Mockito.mock(SideShiftClient.class);
-        SideShiftShiftRepository shiftRepository = Mockito.mock(SideShiftShiftRepository.class);
+        SwapOrderRepository orderRepository = Mockito.mock(SwapOrderRepository.class);
         LoginSessionRepository loginSessionRepository = Mockito.mock(LoginSessionRepository.class);
-        SideShiftStatusScheduler statusScheduler = Mockito.mock(SideShiftStatusScheduler.class);
+        SwapStatusScheduler statusScheduler = Mockito.mock(SwapStatusScheduler.class);
         NetworkAssetService networkAssetService = Mockito.mock(NetworkAssetService.class);
 
         SideShiftProperties properties = new SideShiftProperties();
@@ -33,7 +36,7 @@ class SideShiftSwapServiceTest {
         SideShiftSwapService service = new SideShiftSwapService(
                 client,
                 properties,
-                shiftRepository,
+                orderRepository,
                 statusScheduler,
                 objectMapper,
                 loginSessionRepository,
@@ -60,9 +63,9 @@ class SideShiftSwapServiceTest {
         UUID processId = UUID.randomUUID();
         service.swapToLiquid("btc", "btc", "settle-addr", "refund-addr", processId, "token-123");
 
-        ArgumentCaptor<SideShiftShiftEntity> captor = ArgumentCaptor.forClass(SideShiftShiftEntity.class);
-        verify(shiftRepository).save(captor.capture());
-        SideShiftShiftEntity saved = captor.getValue();
+        ArgumentCaptor<SwapOrderEntity> captor = ArgumentCaptor.forClass(SwapOrderEntity.class);
+        verify(orderRepository).save(captor.capture());
+        SwapOrderEntity saved = captor.getValue();
         assertThat(saved.getUserIp()).isEqualTo("1.2.3.4");
         assertThat(saved.getCreatedAt()).isNotNull();
         assertThat(saved.getUpdatedAt()).isNotNull();
