@@ -1,6 +1,7 @@
 package com.walloop.engine.workflow.walloop.steps;
 
 import com.walloop.engine.service.FeeCalculationService;
+import com.walloop.engine.settlement.ProcessSettlementSnapshotService;
 import com.walloop.engine.workflow.StepResult;
 import com.walloop.engine.workflow.WorkflowContext;
 import com.walloop.engine.workflow.WorkflowStep;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class CalculateFeesStep implements WorkflowStep {
 
     private final FeeCalculationService feeCalculationService;
+    private final ProcessSettlementSnapshotService settlementSnapshotService;
 
     @Override
     public String key() {
@@ -27,6 +29,7 @@ public class CalculateFeesStep implements WorkflowStep {
         UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
         UUID ownerId = context.require(WalloopWorkflowContextKeys.OWNER_ID, UUID.class);
 
+        settlementSnapshotService.capture(processId);
         long fee = feeCalculationService.calculateFee(processId, ownerId);
         context.put(WalloopWorkflowContextKeys.FEE, fee);
 

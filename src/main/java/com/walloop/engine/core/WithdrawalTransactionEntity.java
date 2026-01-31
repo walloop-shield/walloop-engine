@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigInteger;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.hibernate.annotations.Immutable;
 
@@ -24,6 +25,15 @@ public class WithdrawalTransactionEntity {
 
     @Column(nullable = false, precision = 78, scale = 0)
     private BigInteger feeWei;
+
+    @Column(nullable = false, precision = 78, scale = 0)
+    private BigInteger amountWei;
+
+    @Column(length = 128)
+    private String txHash;
+
+    @Column(nullable = false)
+    private OffsetDateTime createdAt;
 
     public UUID getId() {
         return id;
@@ -55,5 +65,29 @@ public class WithdrawalTransactionEntity {
 
     public void setFeeWei(BigInteger feeWei) {
         this.feeWei = feeWei;
+    }
+
+    public BigInteger getAmountWei() {
+        return amountWei;
+    }
+
+    public void setAmountWei(BigInteger amountWei) {
+        this.amountWei = amountWei;
+    }
+
+    public String getTxHash() {
+        return txHash;
+    }
+
+    public void setTxHash(String txHash) {
+        this.txHash = txHash;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
