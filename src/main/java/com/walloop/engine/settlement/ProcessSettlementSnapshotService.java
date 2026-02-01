@@ -58,7 +58,7 @@ public class ProcessSettlementSnapshotService {
 
         String blockchain = watch.map(DepositWatchEntity::getNetwork)
                 .filter(value -> value != null && !value.isBlank())
-                .orElseGet(() -> destinationWithdrawal == null ? null : destinationWithdrawal.getChain());
+                .orElse(null);
 
         BigDecimal initialAmount = watch.map(DepositWatchEntity::getLastBalance)
                 .map(this::toBigDecimal)
@@ -76,22 +76,17 @@ public class ProcessSettlementSnapshotService {
         BigDecimal liquidFee = normalizeSatsToNative(invoice.map(LightningInvoiceEntity::getLiquidFeeSats)
                 .map(BigDecimal::valueOf)
                 .orElse(null), blockchain, nativeAsset, btcUsd);
-        String liquidTxUrl = invoice.map(LightningInvoiceEntity::getLiquidTxId).orElse(null);
+        String liquidTxUrl = explorerUrlResolver.buildTxUrl("liquid",
+            invoice.map(LightningInvoiceEntity::getLiquidTxId).orElse(null));
 
         LightningPayload lightningPayload = resolveLightningPayload(invoice.orElse(null), blockchain, nativeAsset, btcUsd);
 
         ConversionPayload conversionPayload = resolveConversionPayload(conversion.orElse(null), blockchain, nativeAsset, btcUsd);
         String conversionTxUrl = explorerUrlResolver.buildTxUrl(blockchain, conversionPayload.txId());
 
-        BigDecimal destinationAmount = destinationWithdrawal == null
-                ? null
-                : normalizeWeiToNative(destinationWithdrawal.getAmountWei(), nativeAsset);
-        BigDecimal destinationFee = destinationWithdrawal == null
-                ? null
-                : normalizeWeiToNative(destinationWithdrawal.getFeeWei(), nativeAsset);
-        String destinationTxUrl = destinationWithdrawal == null
-                ? null
-                : explorerUrlResolver.buildTxUrl(destinationWithdrawal.getChain(), destinationWithdrawal.getTxHash());
+        BigDecimal destinationAmount = normalizeWeiToNative(destinationWithdrawal.getAmountWei(), nativeAsset);
+        BigDecimal destinationFee = normalizeWeiToNative(destinationWithdrawal.getFeeWei(), nativeAsset);
+        String destinationTxUrl = explorerUrlResolver.buildTxUrl(destinationWithdrawal.getChain(), destinationWithdrawal.getTxHash());
 
         BigDecimal lightningFee = lightningPayload.fee() == null ? BigDecimal.ZERO : lightningPayload.fee();
         BigDecimal feePercent = sum(
@@ -135,9 +130,6 @@ public class ProcessSettlementSnapshotService {
     private WithdrawalTransactionEntity resolveDestinationWithdrawal(UUID processId) {
         List<WithdrawalTransactionEntity> withdrawals = withdrawalTransactionRepository
                 .findByProcessIdOrderByCreatedAtAsc(processId);
-        if (withdrawals.size() < 2) {
-            return withdrawals.isEmpty() ? null : withdrawals.get(0);
-        }
         return withdrawals.get(1);
     }
 
@@ -232,21 +224,11 @@ public class ProcessSettlementSnapshotService {
         if (decoded == null) {
             return new ConversionPayload(null, null, null);
         }
-        Object txId = firstNonNull(
-                nested(decoded, "data", "tx", "id"),
-                nested(decoded, "data", "from", "tx", "id"),
-                nested(decoded, "data", "to", "tx", "id")
-        );
-        Object txAmount = firstNonNull(
-                nested(decoded, "data", "tx", "amount"),
-                nested(decoded, "data", "from", "tx", "amount"),
-                nested(decoded, "data", "to", "tx", "amount")
-        );
-        Object txFee = firstNonNull(
-                nested(decoded, "data", "tx", "fee"),
-                nested(decoded, "data", "from", "tx", "fee"),
-                nested(decoded, "data", "to", "tx", "fee")
-        );
+
+        Object txId = nested(decoded, "data", "to", "tx", "id");
+        Object txAmount = nested(decoded, "data", "to", "tx", "amount");
+        Object txFee = nested(decoded, "data", "to", "tx", "fee");
+
         BigDecimal amount = normalizeEthToNative(toBigDecimal(txAmount), network, nativeAsset, btcUsd);
         BigDecimal fee = normalizeEthToNative(toBigDecimal(txFee), network, nativeAsset, btcUsd);
         return new ConversionPayload(asString(txId), amount, fee);
@@ -283,15 +265,6 @@ public class ProcessSettlementSnapshotService {
             current = map.get(key);
         }
         return current;
-    }
-
-    private Object firstNonNull(Object... values) {
-        for (Object value : values) {
-            if (value != null) {
-                return value;
-            }
-        }
-        return null;
     }
 
     private String asString(Object value) {

@@ -155,7 +155,4 @@ walloop:
       base: https://basescan.org
       optimism: https://optimistic.etherscan.io
       bitcoin: https://mempool.space
-      btc: https://mempool.space
-      liquid: https://blockstream.info/liquid
-      l-btc: https://blockstream.info/liquid
-      lbtc: https://blockstream.info/liquid
+      liquid: https://liquid.network/pt/tx/
