@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.walloop.engine.messaging.WorkflowStepUpdatePublisher;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.Mockito;
@@ -17,7 +18,12 @@ class SequentialWorkflowOrchestratorTest {
     void pausesOnWaitingStepAndResumesToCompletion() {
         TestWorkflowExecutionRepository repository = new TestWorkflowExecutionRepository();
         ApplicationEventPublisher eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
-        SequentialWorkflowOrchestrator orchestrator = new SequentialWorkflowOrchestrator(repository, eventPublisher);
+        WorkflowStepUpdatePublisher workflowStepUpdatePublisher = Mockito.mock(WorkflowStepUpdatePublisher.class);
+        SequentialWorkflowOrchestrator orchestrator = new SequentialWorkflowOrchestrator(
+                repository,
+                eventPublisher,
+                workflowStepUpdatePublisher
+        );
 
         WorkflowDefinition definition = new WorkflowDefinition() {
             @Override

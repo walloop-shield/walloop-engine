@@ -2,6 +2,7 @@ package com.walloop.engine.workflow;
 
 import java.time.Instant;
 import java.util.UUID;
+import com.walloop.engine.messaging.WorkflowStepUpdatePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -14,6 +15,7 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
 
     private final WorkflowExecutionRepository repository;
     private final ApplicationEventPublisher eventPublisher;
+    private final WorkflowStepUpdatePublisher workflowStepUpdatePublisher;
 
     @Override
     public WorkflowExecution start(WorkflowDefinition definition, WorkflowContext context, WorkflowStartMetadata metadata) {
@@ -51,12 +53,14 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
             WorkflowStep step = definition.steps().get(execution.getNextStepIndex());
             try {
                 StepResult result = step.execute(context);
-                execution.addHistory(new StepExecution(step.key(), result.status(), result.detail(), Instant.now()));
+                Instant executedAt = Instant.now();
+                execution.addHistory(new StepExecution(step.key(), result.status(), result.detail(), executedAt));
 
                 if (result.status() == StepStatus.COMPLETED) {
                     execution.setNextStepIndex(execution.getNextStepIndex() + 1);
                     execution.clearRetry();
                     repository.save(execution);
+                    publishStepUpdate(execution, step, result, executedAt);
                     continue;
                 }
 
@@ -68,6 +72,7 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
                         execution.clearRetry();
                     }
                     repository.save(execution);
+                    publishStepUpdate(execution, step, result, executedAt);
                     log.info("SequentialWorkflowOrchestrator - Workflow {} waiting at step {}: {}", execution.getId(), step.key(), result.detail());
                     if (result.status() == StepStatus.RETRY) {
                         eventPublisher.publishEvent(new WorkflowRetryScheduledEvent(execution.getId()));
@@ -77,12 +82,15 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
 
                 execution.setStatus(WorkflowStatus.FAILED);
                 repository.save(execution);
+                publishStepUpdate(execution, step, result, executedAt);
                 log.warn("SequentialWorkflowOrchestrator - Workflow {} failed at step {}: {}", execution.getId(), step.key(), result.detail());
                 return execution;
             } catch (Exception e) {
-                execution.addHistory(new StepExecution(step.key(), StepStatus.FAILED, e.getMessage(), Instant.now()));
+                Instant executedAt = Instant.now();
+                execution.addHistory(new StepExecution(step.key(), StepStatus.FAILED, e.getMessage(), executedAt));
                 execution.setStatus(WorkflowStatus.FAILED);
                 repository.save(execution);
+                publishStepUpdate(execution, step, StepStatus.FAILED, executedAt);
                 log.error("SequentialWorkflowOrchestrator - Workflow {} exception at step {}", execution.getId(), step.key(), e);
                 return execution;
             }
@@ -91,5 +99,47 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
         execution.setStatus(WorkflowStatus.COMPLETED);
         repository.save(execution);
         return execution;
+    }
+
+    private void publishStepUpdate(
+            WorkflowExecution execution,
+            WorkflowStep step,
+            StepResult result,
+            Instant executedAt
+    ) {
+        if (!shouldPublish(step)) {
+            return;
+        }
+        workflowStepUpdatePublisher.publish(
+                execution.getId(),
+                execution.getTransactionId(),
+                execution.getOwnerId(),
+                step.key(),
+                result.status().name(),
+                executedAt
+        );
+    }
+
+    private void publishStepUpdate(
+            WorkflowExecution execution,
+            WorkflowStep step,
+            StepStatus status,
+            Instant executedAt
+    ) {
+        if (!shouldPublish(step)) {
+            return;
+        }
+        workflowStepUpdatePublisher.publish(
+                execution.getId(),
+                execution.getTransactionId(),
+                execution.getOwnerId(),
+                step.key(),
+                status.name(),
+                executedAt
+        );
+    }
+
+    private boolean shouldPublish(WorkflowStep step) {
+        return step != null && !"convert_lightning_to_walloop".equals(step.key());
     }
 }
