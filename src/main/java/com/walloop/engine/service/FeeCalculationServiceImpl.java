@@ -243,7 +243,9 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
         if (network == null || network.isBlank()) {
             return "BTC";
         }
-        return networkAssetService.findMainAsset(network)
+        return networkAssetService.findAsset(network)
+                .map(asset -> asset.mainAsset())
+                .filter(value -> value != null && !value.isBlank())
                 .orElseGet(() -> network.trim().toUpperCase());
     }
 
