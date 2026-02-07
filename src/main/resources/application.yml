@@ -47,14 +47,14 @@ liquid:
 sideshift:
   base-url: ${SIDESHIFT_BASE_URL:https://sideshift.ai/api/v2}
   secret: ${SIDESHIFT_SECRET:***REMOVED***}
-  affiliate-id: ${SIDESHIFT_AFFILIATE_ID:***REMOVED***}
+  affiliate-id: ***REMOVED***
   status-cron: 0 * * * * *
 fixedfloat:
   base-url: ${FIXEDFLOAT_BASE_URL:https://ff.io/api/v2}
   api-key: ${FIXEDFLOAT_API_KEY:***REMOVED***}
   api-secret: ${FIXEDFLOAT_API_SECRET:***REMOVED***}
   refcode: ${FIXEDFLOAT_REFCODE:***REMOVED***}
-  afftax: ${FIXEDFLOAT_AFFTAX:}
+  afftax: 0
   status-cron: 0 * * * * *
 boltz:
   base-url: ${BOLTZ_BASE_URL:https://api.boltz.exchange/v2}
