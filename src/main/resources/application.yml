@@ -126,6 +126,8 @@ eureka:
     instance-id: ${FLY_APP_NAME:walloop-engine}:${FLY_PRIVATE_IP:127.0.0.1}
 
 walloop:
+  pair-availability:
+    cache-seconds: 60
   wallet:
     base-url: ${WALLOOP_WALLET_BASE_URL:http://localhost:8080}
   lightning:
