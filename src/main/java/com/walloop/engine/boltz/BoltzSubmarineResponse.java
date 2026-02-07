@@ -5,6 +5,8 @@ public record BoltzSubmarineResponse(
         String bip21,
         String address,
         Long expectedAmount,
-        Boolean acceptZeroConf
+        Boolean acceptZeroConf,
+        String claimPublicKey,
+        String swapTree
 ) {
 }

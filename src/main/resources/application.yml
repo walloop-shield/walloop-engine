@@ -58,6 +58,10 @@ fixedfloat:
   status-cron: 0 * * * * *
 boltz:
   base-url: ${BOLTZ_BASE_URL:https://api.boltz.exchange/v2}
+  claim:
+    enabled: true
+    pending-status: transaction.claim.pending
+    signer-url: ${BOLTZ_CLAIM_SIGNER_URL:http://walloop-lightning-signer.internal:3000}
   status-cron: 0 * * * * *
   paid-status: transaction.claimed
   cloud:

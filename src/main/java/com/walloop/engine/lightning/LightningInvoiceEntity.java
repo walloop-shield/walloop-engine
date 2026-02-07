@@ -93,6 +93,26 @@ public class LightningInvoiceEntity {
 
     private OffsetDateTime swapPaidAt;
 
+    @Column
+    private String swapClaimPublicKey;
+
+    @Column(columnDefinition = "TEXT")
+    private String swapClaimTree;
+
+    @Column
+    private String swapClaimPubNonce;
+
+    @Column
+    private String swapClaimTxHash;
+
+    @Column
+    private String swapClaimPartialSignature;
+
+    @Column
+    private String swapClaimStatus;
+
+    private OffsetDateTime swapClaimSubmittedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LightningInvoiceStatus status;
@@ -309,6 +329,62 @@ public class LightningInvoiceEntity {
 
     public void setSwapPaidAt(OffsetDateTime swapPaidAt) {
         this.swapPaidAt = swapPaidAt;
+    }
+
+    public String getSwapClaimPublicKey() {
+        return swapClaimPublicKey;
+    }
+
+    public void setSwapClaimPublicKey(String swapClaimPublicKey) {
+        this.swapClaimPublicKey = swapClaimPublicKey;
+    }
+
+    public String getSwapClaimTree() {
+        return swapClaimTree;
+    }
+
+    public void setSwapClaimTree(String swapClaimTree) {
+        this.swapClaimTree = swapClaimTree;
+    }
+
+    public String getSwapClaimPubNonce() {
+        return swapClaimPubNonce;
+    }
+
+    public void setSwapClaimPubNonce(String swapClaimPubNonce) {
+        this.swapClaimPubNonce = swapClaimPubNonce;
+    }
+
+    public String getSwapClaimTxHash() {
+        return swapClaimTxHash;
+    }
+
+    public void setSwapClaimTxHash(String swapClaimTxHash) {
+        this.swapClaimTxHash = swapClaimTxHash;
+    }
+
+    public String getSwapClaimPartialSignature() {
+        return swapClaimPartialSignature;
+    }
+
+    public void setSwapClaimPartialSignature(String swapClaimPartialSignature) {
+        this.swapClaimPartialSignature = swapClaimPartialSignature;
+    }
+
+    public String getSwapClaimStatus() {
+        return swapClaimStatus;
+    }
+
+    public void setSwapClaimStatus(String swapClaimStatus) {
+        this.swapClaimStatus = swapClaimStatus;
+    }
+
+    public OffsetDateTime getSwapClaimSubmittedAt() {
+        return swapClaimSubmittedAt;
+    }
+
+    public void setSwapClaimSubmittedAt(OffsetDateTime swapClaimSubmittedAt) {
+        this.swapClaimSubmittedAt = swapClaimSubmittedAt;
     }
 
     public LightningInvoiceStatus getStatus() {

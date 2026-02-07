@@ -19,4 +19,10 @@ public interface BoltzClient {
 
     @GetMapping("/swap/{id}")
     BoltzSwapStatusResponse getSwapStatus(@PathVariable("id") String id);
+
+    @GetMapping("/swap/submarine/{id}/claim")
+    BoltzSubmarineClaimResponse getSubmarineClaim(@PathVariable("id") String id);
+
+    @PostMapping(value = "/swap/submarine/{id}/claim", consumes = MediaType.APPLICATION_JSON_VALUE)
+    void submitSubmarineClaim(@PathVariable("id") String id, @RequestBody BoltzSubmarineClaimRequest request);
 }

@@ -46,6 +46,7 @@ public class BoltzStatusPoller implements LightningSwapStatusPoller {
     private final ObjectProvider<WalloopEngineWorkflow> workflowProvider;
     private final ObjectMapper objectMapper;
     private final SynchronousLndAPI lndApi;
+    private final BoltzClaimService boltzClaimService;
 
     @Value("${boltz.paid-status:invoice.paid}")
     private String paidStatus;
@@ -86,6 +87,10 @@ public class BoltzStatusPoller implements LightningSwapStatusPoller {
                             lightningInvoiceRepository.save(invoice);
                             pendingLeft = true;
                         }
+                    } else if (boltzClaimService.isClaimPending(response)) {
+                        lightningInvoiceRepository.save(invoice);
+                        boltzClaimService.tryClaim(invoice);
+                        pendingLeft = true;
                     } else {
                         lightningInvoiceRepository.save(invoice);
                         pendingLeft = true;
