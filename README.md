@@ -83,6 +83,28 @@ Configuracoes principais (application.yml):
 
 Observacao: o endpoint GraphQL e fixo no codigo (`/graphql`).
 
+## Cache (Caffeine)
+O engine usa Caffeine para reduzir chamadas externas em consultas de par e cotacao.
+
+Caches ativos:
+- `pairAvailability`: usado em `PairAvailabilityService` (TTL configuravel).
+- `fxRates`: usado pelo `CoinCapFxRateProvider` (TTL configuravel).
+
+Config (application.yml):
+```
+walloop:
+  pair-availability:
+    cache-seconds: 60
+  fee:
+    rate-provider:
+      type: coincap
+    coincap:
+      cache-seconds: 300
+```
+
+Observacao: altere os TTLs via `walloop.pair-availability.cache-seconds` e
+`walloop.fee.coincap.cache-seconds` conforme a necessidade do ambiente.
+
 ## Flyway
 - As migrations vivem em `src/main/resources/db/migration`.
 - Migracao baseline `V1.0.0__init_customers.sql` cria o schema `engine`, habilita `pgcrypto` e cria a tabela `customers` com chave primaria UUID.

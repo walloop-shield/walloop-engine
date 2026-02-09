@@ -50,6 +50,15 @@ Exchange/queue config:
 - LND gRPC: `org.tbk.lightning.lnd.grpc.*` (create invoice) `walloop-lightning-node`.
 - Wallet (network catalog): Feign `WalletNetworkClient` at `/v1/chains` using `walloop.wallet.base-url`.
 
+## Cache (Caffeine)
+- Cache manager: `src/main/java/com/walloop/engine/config/CacheConfig.java`
+- Caches:
+  - `pairAvailability` (TTL: `walloop.pair-availability.cache-seconds`, default 60s)
+  - `fxRates` (TTL: `walloop.fee.coincap.cache-seconds`, default 300s)
+- Cached providers:
+  - `PairAvailabilityService.cachedCheck(...)` (`@Cacheable` on `pairAvailability`)
+  - `CoinCapFxRateProvider.fetch()` and `.fetchAssetUsd(...)` (`@Cacheable` on `fxRates`)
+
 ## Schedulers
 Resume workflows when external status changes:
 - `ConversionStatusScheduler`

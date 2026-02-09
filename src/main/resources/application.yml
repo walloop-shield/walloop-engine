@@ -151,6 +151,7 @@ walloop:
       base-url: ${COINCAP_BASE_URL:https://rest.coincap.io/v3}
       api-key: ${WALLOOP_FEE_COINCAP_API_KEY:}
       usd-brl-rate-id: brazilian-real
+      cache-seconds: 300
   explorer:
     tx-base-urls:
       ethereum: https://etherscan.io

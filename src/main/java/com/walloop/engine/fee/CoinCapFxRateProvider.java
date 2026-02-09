@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -35,6 +36,7 @@ public class CoinCapFxRateProvider implements FxRateProvider {
     private String usdBrlRateId;
 
     @Override
+    @Cacheable(cacheNames = "fxRates", key = "'snapshot'")
     public Optional<FxRateSnapshot> fetch() {
         try {
             Optional<BigDecimal> btcUsd = fetchAssetUsd("bitcoin");
@@ -50,6 +52,7 @@ public class CoinCapFxRateProvider implements FxRateProvider {
     }
 
     @Override
+    @Cacheable(cacheNames = "fxRates", key = "#assetId")
     public Optional<BigDecimal> fetchAssetUsd(String assetId) {
         if (assetId == null || assetId.isBlank()) {
             return Optional.empty();
