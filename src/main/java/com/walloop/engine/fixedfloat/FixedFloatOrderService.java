@@ -42,11 +42,7 @@ public class FixedFloatOrderService implements ConversionPartnerService {
                 ConversionPartner.FIXEDFLOAT
         );
         if (existing.isPresent()) {
-            ConversionOrderEntity current = existing.get();
-            if (!shouldRecreateInvoice(current)) {
-                return current;
-            }
-            markReplaced(current);
+            return existing.get();
         }
 
         String fromCcy = FROM_CCY;
@@ -187,25 +183,6 @@ public class FixedFloatOrderService implements ConversionPartnerService {
 
     private boolean isSuccess(FixedFloatResponse<?> response) {
         return response != null && "0".equals(response.code());
-    }
-
-    private boolean shouldRecreateInvoice(ConversionOrderEntity entity) {
-        String paymentStatus = entity.getPaymentStatus();
-        if (paymentStatus == null || !"FAILED".equalsIgnoreCase(paymentStatus)) {
-            return false;
-        }
-        String error = entity.getPaymentError();
-        if (error == null || error.isBlank()) {
-            return false;
-        }
-        String normalized = error.trim().toLowerCase(Locale.ROOT);
-        return normalized.contains("no_route") || normalized.contains("no_router");
-    }
-
-    private void markReplaced(ConversionOrderEntity entity) {
-        entity.setStatus("REPLACED");
-        entity.setUpdatedAt(OffsetDateTime.now());
-        repository.save(entity);
     }
 
     private String extractPaymentRequest(Map<String, Object> data) {
