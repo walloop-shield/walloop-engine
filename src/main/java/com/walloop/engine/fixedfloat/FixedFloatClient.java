@@ -3,7 +3,6 @@ package com.walloop.engine.fixedfloat;
 import java.util.Map;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -25,6 +24,10 @@ public interface FixedFloatClient {
             @RequestBody String payload
     );
 
-    @GetMapping(value = "/pairs", produces = MediaType.APPLICATION_JSON_VALUE)
-    String getPairs();
+    @PostMapping(value = "/price", consumes = MediaType.APPLICATION_JSON_VALUE)
+    FixedFloatResponse<Map<String, Object>> getPrice(
+            @RequestHeader("X-API-KEY") String apiKey,
+            @RequestHeader("X-API-SIGN") String apiSign,
+            @RequestBody String payload
+    );
 }

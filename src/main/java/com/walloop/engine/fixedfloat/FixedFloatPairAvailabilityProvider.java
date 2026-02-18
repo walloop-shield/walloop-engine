@@ -1,11 +1,17 @@
 package com.walloop.engine.fixedfloat;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walloop.engine.pairs.PairAvailabilityItem;
 import com.walloop.engine.pairs.PairAvailabilityProvider;
+import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,9 +22,15 @@ import org.springframework.stereotype.Component;
 public class FixedFloatPairAvailabilityProvider implements PairAvailabilityProvider {
 
     private static final String PARTNER = "FIXEDFLOAT";
+    private static final String HMAC_ALGORITHM = "HmacSHA256";
+    private static final String ORDER_TYPE = "float";
+    private static final String DIRECTION = "from";
+    private static final String FROM_CCY = "BTCLN";
+    private static final BigDecimal AVAILABILITY_AMOUNT = new BigDecimal("0.002");
 
     private final FixedFloatClient client;
     private final ObjectMapper objectMapper;
+    private final FixedFloatProperties properties;
     private final LightningToOnchainRateRepository lightningToOnchainRateRepository;
 
     @Override
@@ -32,83 +44,150 @@ public class FixedFloatPairAvailabilityProvider implements PairAvailabilityProvi
             return Optional.empty();
         }
         String normalized = network.trim().toLowerCase(Locale.ROOT);
-        String fromKey = "BTCLN";
+        String fromKey = FROM_CCY;
         String toKey = lightningToOnchainRateRepository.findLatestByFromAssetAndNetwork(fromKey, normalized)
                 .map(LightningToOnchainRateEntity::getToAsset)
                 .filter(value -> value != null && !value.isBlank())
                 .orElse(null);
         if (toKey == null) {
-            log.warn("FixedFloatPairAvailabilityProvider - mapping missing - network={}", normalized);
-            return Optional.of(new PairAvailabilityItem(PARTNER, fromKey, null, false));
+            log.error("FixedFloatPairAvailabilityProvider - mapping missing - network={}", normalized);
+            return Optional.of(new PairAvailabilityItem(PARTNER, fromKey, null, false, null, null));
         }
         toKey = toKey.trim().toUpperCase(Locale.ROOT);
         try {
-            String payload = client.getPairs();
-            boolean available = isAvailable(payload, fromKey, toKey);
-            return Optional.of(new PairAvailabilityItem(PARTNER, fromKey, toKey, available));
+            FixedFloatPriceRequest request = new FixedFloatPriceRequest(
+                    ORDER_TYPE,
+                    fromKey,
+                    toKey,
+                    DIRECTION,
+                    AVAILABILITY_AMOUNT
+            );
+            String payload = objectMapper.writeValueAsString(request);
+            FixedFloatResponse<Map<String, Object>> response = client.getPrice(
+                    requireApiKey(),
+                    sign(payload),
+                    payload
+            );
+            boolean available = isAvailable(response);
+            BigDecimal assetUsd = extractBtclnUsd(response);
+            BigDecimal minUsd = toUsd(extractFromLimit(response, "min"), assetUsd);
+            BigDecimal maxUsd = toUsd(extractFromLimit(response, "max"), assetUsd);
+            return Optional.of(new PairAvailabilityItem(PARTNER, fromKey, toKey, available, minUsd, maxUsd));
         } catch (Exception e) {
             log.warn("FixedFloatPairAvailabilityProvider - availability check failed - from={} to={}", fromKey, toKey, e);
-            return Optional.of(new PairAvailabilityItem(PARTNER, fromKey, toKey, false));
+            return Optional.of(new PairAvailabilityItem(PARTNER, fromKey, toKey, false, null, null));
         }
     }
 
-    private boolean isAvailable(String payload, String from, String to) throws Exception {
-        if (payload == null || payload.isBlank()) {
+    private boolean isAvailable(FixedFloatResponse<Map<String, Object>> response) {
+        if (response == null || response.data() == null) {
             return false;
         }
-        JsonNode root = objectMapper.readTree(payload);
-        JsonNode node = root;
-        if (node.has("result")) {
-            node = node.get("result");
-        }
-        if (node.isObject()) {
-            JsonNode fromNode = findKey(node, from);
-            if (fromNode == null || fromNode.isNull()) {
-                return false;
-            }
-            if (fromNode.isObject()) {
-                JsonNode toNode = findKey(fromNode, to);
-                return toNode != null && !toNode.isNull();
-            }
-            if (fromNode.isArray()) {
-                for (JsonNode item : fromNode) {
-                    if (item.isTextual() && to.equalsIgnoreCase(item.asText())) {
-                        return true;
-                    }
-                }
-            }
-        }
-        if (node.isArray()) {
-            for (JsonNode item : node) {
-                if (item.isTextual()) {
-                    String value = item.asText();
-                    if (value.equalsIgnoreCase(from + to) || value.equalsIgnoreCase(from + "_" + to)) {
-                        return true;
-                    }
-                } else if (item.isObject()) {
-                    JsonNode fromNode = findKey(item, from);
-                    JsonNode toNode = findKey(item, to);
-                    if (fromNode != null && toNode != null) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        Object errors = response.data().get("errors");
+        return !hasAnyValue(errors);
     }
 
-    private JsonNode findKey(JsonNode node, String key) {
-        if (node.has(key)) {
-            return node.get(key);
+    private boolean hasAnyValue(Object value) {
+        if (value == null) {
+            return false;
         }
-        String lower = key.toLowerCase(Locale.ROOT);
-        if (node.has(lower)) {
-            return node.get(lower);
+        if (value instanceof String text) {
+            return !text.isBlank();
         }
-        String upper = key.toUpperCase(Locale.ROOT);
-        if (node.has(upper)) {
-            return node.get(upper);
+        if (value instanceof Collection<?> collection) {
+            return !collection.isEmpty();
         }
-        return null;
+        if (value instanceof Map<?, ?> map) {
+            return !map.isEmpty();
+        }
+        if (value.getClass().isArray()) {
+            return Array.getLength(value) > 0;
+        }
+        return true;
+    }
+
+    private BigDecimal extractFromLimit(FixedFloatResponse<Map<String, Object>> response, String field) {
+        if (response == null || response.data() == null) {
+            return null;
+        }
+        Object fromNode = response.data().get("from");
+        if (!(fromNode instanceof Map<?, ?> fromMap)) {
+            return null;
+        }
+        Object value = fromMap.get(field);
+        return toBigDecimal(value);
+    }
+
+    private BigDecimal toUsd(BigDecimal fromLimit, BigDecimal assetUsd) {
+        if (fromLimit == null || assetUsd == null) {
+            return null;
+        }
+        if (fromLimit.compareTo(BigDecimal.ZERO) <= 0
+                || assetUsd.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        return fromLimit.multiply(assetUsd).setScale(8, java.math.RoundingMode.DOWN);
+    }
+
+    private BigDecimal extractBtclnUsd(FixedFloatResponse<Map<String, Object>> response) {
+        if (response == null || response.data() == null) {
+            return null;
+        }
+        Object fromNode = response.data().get("from");
+        if (!(fromNode instanceof Map<?, ?> fromMap)) {
+            return null;
+        }
+        Object codeObj = fromMap.get("code");
+        if (codeObj == null || !FROM_CCY.equalsIgnoreCase(codeObj.toString())) {
+            return null;
+        }
+        BigDecimal amount = toBigDecimal(fromMap.get("amount"));
+        BigDecimal usd = toBigDecimal(fromMap.get("usd"));
+        if (amount == null || usd == null || amount.compareTo(BigDecimal.ZERO) <= 0 || usd.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        return usd.divide(amount, 18, java.math.RoundingMode.DOWN);
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value.toString());
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private String requireApiKey() {
+        String apiKey = properties.getApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("FixedFloat API key not configured");
+        }
+        return apiKey;
+    }
+
+    private String sign(String payload) {
+        String secret = properties.getApiSecret();
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("FixedFloat API secret not configured");
+        }
+        try {
+            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
+            byte[] digest = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            return toHex(digest);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to sign FixedFloat payload", e);
+        }
+    }
+
+    private String toHex(byte[] bytes) {
+        StringBuilder builder = new StringBuilder(bytes.length * 2);
+        for (byte value : bytes) {
+            builder.append(String.format("%02x", value));
+        }
+        return builder.toString();
     }
 }
