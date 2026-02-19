@@ -1,5 +1,7 @@
 package com.walloop.engine.boltz;
 
+import java.util.Map;
+
 public record BoltzSubmarineResponse(
         String id,
         String bip21,
@@ -7,6 +9,6 @@ public record BoltzSubmarineResponse(
         Long expectedAmount,
         Boolean acceptZeroConf,
         String claimPublicKey,
-        String swapTree
+        Map<String, Object> swapTree
 ) {
 }

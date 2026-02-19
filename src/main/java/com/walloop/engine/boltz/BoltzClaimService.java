@@ -111,7 +111,12 @@ public class BoltzClaimService {
                 return Optional.empty();
             }
             String claimPublicKey = claimKey.toString();
-            String swapTreeValue = swapTree.toString();
+            String swapTreeValue;
+            if (swapTree instanceof String text) {
+                swapTreeValue = text;
+            } else {
+                swapTreeValue = objectMapper.writeValueAsString(swapTree);
+            }
             if (claimPublicKey.isBlank() || swapTreeValue.isBlank()) {
                 return Optional.empty();
             }
