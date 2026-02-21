@@ -12,6 +12,7 @@ import com.walloop.engine.onboarding.LoginSessionRepository;
 import com.walloop.engine.swap.SwapOrderEntity;
 import com.walloop.engine.swap.SwapOrderRepository;
 import com.walloop.engine.swap.SwapStatusScheduler;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -44,9 +45,11 @@ class SideShiftSwapServiceTest {
         );
 
         LoginSessionEntity session = new LoginSessionEntity();
-        session.setSessionToken("token-123");
+        UUID ownerId = UUID.randomUUID();
+        session.setUserId(ownerId);
         session.setIpAddress("1.2.3.4");
-        when(loginSessionRepository.findBySessionToken("token-123")).thenReturn(Optional.of(session));
+        session.setCreatedAt(OffsetDateTime.now());
+        when(loginSessionRepository.findFirstByUserIdOrderByCreatedAtDesc(ownerId)).thenReturn(Optional.of(session));
         when(networkAssetService.requireMainAsset("btc")).thenReturn("BTC");
 
         SideShiftShiftResponse response = new SideShiftShiftResponse(
@@ -61,7 +64,7 @@ class SideShiftSwapServiceTest {
                 .thenReturn(response);
 
         UUID processId = UUID.randomUUID();
-        service.swapToLiquid("btc", "btc", "settle-addr", "refund-addr", processId, "token-123");
+        service.swapToLiquid("btc", "btc", "settle-addr", "refund-addr", processId, ownerId);
 
         ArgumentCaptor<SwapOrderEntity> captor = ArgumentCaptor.forClass(SwapOrderEntity.class);
         verify(orderRepository).save(captor.capture());

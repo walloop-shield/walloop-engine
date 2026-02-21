@@ -8,6 +8,6 @@ public record SwapToLiquidRequest(
         String settleAddress,
         String refundAddress,
         UUID processId,
-        String sessionToken
+        UUID ownerId
 ) {
 }

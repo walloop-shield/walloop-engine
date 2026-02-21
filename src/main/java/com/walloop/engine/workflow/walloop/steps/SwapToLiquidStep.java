@@ -43,12 +43,12 @@ public class SwapToLiquidStep implements WorkflowStep {
     @Override
     public StepResult execute(WorkflowContext context) {
         UUID processId = context.require(WalloopWorkflowContextKeys.PROCESS_ID, UUID.class);
+        UUID ownerId = context.require(WalloopWorkflowContextKeys.OWNER_ID, UUID.class);
         String chain = context.require(WalloopWorkflowContextKeys.CHAIN, String.class);
         swapQuoteService.ensureQuote(processId, chain, chain);
         String liquidAddress = context.get(WalloopWorkflowContextKeys.LIQUID_ADDRESS, String.class)
                 .orElseThrow(() -> new IllegalStateException("Liquid address not present in context"));
         String refundAddress = context.require(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, String.class);
-        String sessionToken = context.get(WalloopWorkflowContextKeys.SESSION_TOKEN, String.class).orElse(null);
 
         SwapOrderEntity shiftEntity = orderRepository.findFirstByProcessIdOrderByCreatedAtDesc(processId)
                 .orElse(null);
@@ -60,7 +60,7 @@ public class SwapToLiquidStep implements WorkflowStep {
                         liquidAddress,
                         refundAddress,
                         processId,
-                        sessionToken
+                        ownerId
                 );
                 SwapToLiquidResult shift = swapToLiquidPartner.createSwap(request);
 

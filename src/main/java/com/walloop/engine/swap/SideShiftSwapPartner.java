@@ -19,7 +19,7 @@ public class SideShiftSwapPartner implements SwapToLiquidPartner {
                 request.settleAddress(),
                 request.refundAddress(),
                 request.processId(),
-                request.sessionToken()
+                request.ownerId()
         );
         return new SwapToLiquidResult(
                 response.id(),

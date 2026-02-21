@@ -36,13 +36,13 @@ public class SideShiftSwapService {
             String settleAddress,
             String refundAddress,
             UUID processId,
-            String sessionToken
+            UUID ownerId
     ) {
         String secret = properties.getSecret();
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException("SideShift secret is not configured");
         }
-        String userIp = resolveUserIp(sessionToken);
+        String userIp = resolveUserIp(ownerId);
         String mainAsset = networkAssetService.requireMainAsset(depositCoin);
         SideShiftCreateVariableShiftRequest request = SideShiftCreateVariableShiftRequest.builder()
                 .depositCoin(mainAsset.toLowerCase())
@@ -80,11 +80,11 @@ public class SideShiftSwapService {
         statusScheduler.ensurePolling();
     }
 
-    private String resolveUserIp(String sessionToken) {
-        if (sessionToken == null || sessionToken.isBlank()) {
+    private String resolveUserIp(UUID ownerId) {
+        if (ownerId == null) {
             return null;
         }
-        return loginSessionRepository.findBySessionToken(sessionToken)
+        return loginSessionRepository.findFirstByUserIdOrderByCreatedAtDesc(ownerId)
                 .map(LoginSessionEntity::getIpAddress)
                 .filter(ip -> !ip.isBlank())
                 .orElse(null);

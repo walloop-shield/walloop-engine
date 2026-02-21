@@ -153,7 +153,6 @@ class SwapToLiquidStepTest {
         context.put(WalloopWorkflowContextKeys.CHAIN, "btc");
         context.put(WalloopWorkflowContextKeys.LIQUID_ADDRESS, "liquid-addr");
         context.put(WalloopWorkflowContextKeys.TRANSACTION_ADDRESS, "tx-addr");
-        context.put(WalloopWorkflowContextKeys.SESSION_TOKEN, "session-token");
         return context;
     }
 }
