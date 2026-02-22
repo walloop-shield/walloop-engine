@@ -12,9 +12,11 @@ import com.walloop.engine.swap.SwapPartner;
 import com.walloop.engine.swap.SwapStatusScheduler;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SideShiftSwapService {
@@ -42,7 +44,10 @@ public class SideShiftSwapService {
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException("SideShift secret is not configured");
         }
+
         String userIp = resolveUserIp(ownerId);
+        log.info("SideShiftSwapService - IP Address transaction: userIp={} processId={} ownerId={}", userIp, processId, ownerId);
+        
         String mainAsset = networkAssetService.requireMainAsset(depositCoin);
         SideShiftCreateVariableShiftRequest request = SideShiftCreateVariableShiftRequest.builder()
                 .depositCoin(mainAsset.toLowerCase())
@@ -85,9 +90,7 @@ public class SideShiftSwapService {
             return null;
         }
         return loginSessionRepository.findFirstByUserIdOrderByCreatedAtDesc(ownerId)
-                .map(LoginSessionEntity::getIpAddress)
-                .filter(ip -> !ip.isBlank())
-                .orElse(null);
+                .map(LoginSessionEntity::getIpAddress).get();
     }
 
     private String toJson(Object value) {
