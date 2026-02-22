@@ -34,6 +34,7 @@ public class ProcessSettlementSnapshotService {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
     private static final BigDecimal SATS_PER_BTC = new BigDecimal("100000000");
+    private static final String DESTINATION_TO_PRINCIPAL_WALLET = "TO_PRINCIPAL_WALLET";
 
     private final DepositWatchRepository depositWatchRepository;
     private final LightningInvoiceRepository lightningInvoiceRepository;
@@ -84,8 +85,8 @@ public class ProcessSettlementSnapshotService {
         ConversionPayload conversionPayload = resolveConversionPayload(conversion.orElse(null), blockchain, nativeAsset, btcUsd);
         String conversionTxUrl = explorerUrlResolver.buildTxUrl(blockchain, conversionPayload.txId());
 
-        BigDecimal destinationAmount = normalizeWeiToNative(destinationWithdrawal.getAmountWei(), nativeAsset);
-        BigDecimal destinationFee = normalizeWeiToNative(destinationWithdrawal.getFeeWei(), nativeAsset);
+        BigDecimal destinationAmount = normalizeBaseUnitToNative(destinationWithdrawal.getAmountBaseUnit(), nativeAsset);
+        BigDecimal destinationFee = normalizeBaseUnitToNative(destinationWithdrawal.getFeeBaseUnit(), nativeAsset);
         String destinationTxUrl = explorerUrlResolver.buildTxUrl(destinationWithdrawal.getChain(), destinationWithdrawal.getTxHash());
 
         BigDecimal lightningFee = lightningPayload.fee() == null ? BigDecimal.ZERO : lightningPayload.fee();
@@ -128,9 +129,17 @@ public class ProcessSettlementSnapshotService {
     }
 
     private WithdrawalTransactionEntity resolveDestinationWithdrawal(UUID processId) {
+        Optional<WithdrawalTransactionEntity> destination = withdrawalTransactionRepository
+                .findFirstByProcessIdAndDestinationOrderByCreatedAtDesc(processId, DESTINATION_TO_PRINCIPAL_WALLET);
+        if (destination.isPresent()) {
+            return destination.get();
+        }
         List<WithdrawalTransactionEntity> withdrawals = withdrawalTransactionRepository
                 .findByProcessIdOrderByCreatedAtAsc(processId);
-        return withdrawals.get(1);
+        if (withdrawals.isEmpty()) {
+            throw new IllegalStateException("No withdrawals found for processId=" + processId);
+        }
+        return withdrawals.get(withdrawals.size() - 1);
     }
 
     private BigDecimal resolveBtcUsd(FxRateSnapshot rates) {
@@ -289,7 +298,7 @@ public class ProcessSettlementSnapshotService {
         return new BigDecimal(value);
     }
 
-    private BigDecimal normalizeWeiToNative(java.math.BigInteger value, NetworkAssetResponse nativeAsset) {
+    private BigDecimal normalizeBaseUnitToNative(java.math.BigInteger value, NetworkAssetResponse nativeAsset) {
         if (value == null) {
             return null;
         }

@@ -288,14 +288,14 @@ public class FeeCalculationServiceImpl implements FeeCalculationService {
         if (normalized.isEmpty()) {
             return 0L;
         }
-        BigInteger feeWei = withdrawalTransactionRepository.sumFeeWeiByProcessId(processId, normalized);
-        if (feeWei == null) {
+        BigInteger feeBaseUnit = withdrawalTransactionRepository.sumFeeBaseUnitByProcessId(processId, normalized);
+        if (feeBaseUnit == null) {
             return 0L;
         }
-        if (feeWei.compareTo(BigInteger.ZERO) <= 0) {
+        if (feeBaseUnit.compareTo(BigInteger.ZERO) <= 0) {
             return 0L;
         }
-        return feeWei.longValue();
+        return feeBaseUnit.longValue();
     }
 
     private record AmountSnapshot(

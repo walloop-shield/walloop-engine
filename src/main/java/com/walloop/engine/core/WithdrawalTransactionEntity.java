@@ -23,11 +23,17 @@ public class WithdrawalTransactionEntity {
     @Column(nullable = false, length = 20)
     private String chain;
 
-    @Column(nullable = false, precision = 78, scale = 0)
-    private BigInteger feeWei;
+    @Column(name = "fee", nullable = false, precision = 78, scale = 0)
+    private BigInteger feeBaseUnit;
 
-    @Column(nullable = false, precision = 78, scale = 0)
-    private BigInteger amountWei;
+    @Column(name = "amount", nullable = false, precision = 78, scale = 0)
+    private BigInteger amountBaseUnit;
+
+    @Column(nullable = false, length = 32)
+    private String destination;
+
+    @Column(nullable = false)
+    private boolean commissionFeeApplied;
 
     @Column(length = 128)
     private String txHash;
@@ -59,20 +65,20 @@ public class WithdrawalTransactionEntity {
         this.chain = chain;
     }
 
-    public BigInteger getFeeWei() {
-        return feeWei;
+    public BigInteger getFeeBaseUnit() {
+        return feeBaseUnit;
     }
 
-    public void setFeeWei(BigInteger feeWei) {
-        this.feeWei = feeWei;
+    public void setFeeBaseUnit(BigInteger feeBaseUnit) {
+        this.feeBaseUnit = feeBaseUnit;
     }
 
-    public BigInteger getAmountWei() {
-        return amountWei;
+    public BigInteger getAmountBaseUnit() {
+        return amountBaseUnit;
     }
 
-    public void setAmountWei(BigInteger amountWei) {
-        this.amountWei = amountWei;
+    public void setAmountBaseUnit(BigInteger amountBaseUnit) {
+        this.amountBaseUnit = amountBaseUnit;
     }
 
     public String getTxHash() {
@@ -81,6 +87,22 @@ public class WithdrawalTransactionEntity {
 
     public void setTxHash(String txHash) {
         this.txHash = txHash;
+    }
+
+    public String getDestination() {
+        return destination;
+    }
+
+    public void setDestination(String destination) {
+        this.destination = destination;
+    }
+
+    public boolean isCommissionFeeApplied() {
+        return commissionFeeApplied;
+    }
+
+    public void setCommissionFeeApplied(boolean commissionFeeApplied) {
+        this.commissionFeeApplied = commissionFeeApplied;
     }
 
     public OffsetDateTime getCreatedAt() {
