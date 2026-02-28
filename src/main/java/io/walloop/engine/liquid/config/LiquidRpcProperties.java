@@ -7,13 +7,10 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "liquid.rpc")
 public class LiquidRpcProperties {
 
-    /**
-     * Base URL of the Liquid node (e.g. http://localhost:7041).
-     */
-    private String url = "http://localhost:7041";
+    private String url;
 
-    private String username = "rpcuser";
-    private String password = "rpcpassword";
+    private String username;
+    private String password;
 
     public String getUrl() {
         return url;

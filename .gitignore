@@ -19,6 +19,7 @@ Thumbs.db
 # Runtime / tooling
 .env
 .env.*
+!.env.example
 logs/
 *.pid
 *.seed
@@ -26,3 +27,8 @@ logs/
 
 # Certificates
 certs/
+*.pem
+*.key
+*.p12
+*.jks
+*.crt
