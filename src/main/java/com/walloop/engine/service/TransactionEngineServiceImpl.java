@@ -24,12 +24,14 @@ public class TransactionEngineServiceImpl implements TransactionEngineService {
 
     @Override
     public void handleTransactionStart(TransactionStartMessage message) {
-        WalletTransactionDetails tx = walletTransactionQueryService.require(
-                message.getProcessId(),
-                message.getOwnerId()
-        );
-
-        // TODO se transação não existe não pode seguir
+        WalletTransactionDetails tx = walletTransactionQueryService
+                .find(message.getProcessId(), message.getOwnerId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "TransactionEngineServiceImpl - transaction not found - processId="
+                                + message.getProcessId()
+                                + " ownerId="
+                                + message.getOwnerId()
+                ));
 
         WorkflowContext context = new WorkflowContext();
         context.put(WalloopWorkflowContextKeys.PROCESS_ID, message.getProcessId());
@@ -53,3 +55,4 @@ public class TransactionEngineServiceImpl implements TransactionEngineService {
                 tx.chain());
     }
 }
+

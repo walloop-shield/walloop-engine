@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class LiquidRpcProperties {
 
     /**
-     * URL base do nó Liquid (ex: http://localhost:7041).
+     * Base URL of the Liquid node (e.g. http://localhost:7041).
      */
     private String url = "http://localhost:7041";
 
@@ -39,3 +39,4 @@ public class LiquidRpcProperties {
         this.password = password;
     }
 }
+

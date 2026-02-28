@@ -1,59 +1,62 @@
 # walloop-engine
-Core Engine Service que centraliza orquestracao de logicas, fluxos de transacao e integracoes para a plataforma Walloop.
+Engine Service that centralizes orchestration logic, transaction workflows, and integrations for the Walloop platform.
+
+## Business Overview
+The engine is the operational brain of Walloop: it coordinates each transaction journey end-to-end, connects platform modules and external partners, and ensures that swaps, conversions, and settlement steps progress with traceability and business control.
 
 ## Stack
 - Java 21, Spring Boot 3.3.4, Spring Cloud 2023.0.3
-- CSR (Controller-Service-Repository) com Spring Data JPA + PostgreSQL (db `walloop`, schema `engine`, IDs UUID)
-- Flyway para versionamento de schema (migrations em `src/main/resources/db/migration`)
-- RabbitMQ para mensageria
-- WebSockets (STOMP/SockJS), OpenFeign clients e (opcional) Eureka para service discovery
-- Observabilidade com Micrometer/OTLP (collector OTEL no docker-compose)
-- MapStruct para mapeamento de DTOs e Lombok para reduzir boilerplate
+- CSR (Controller-Service-Repository) with Spring Data JPA + PostgreSQL (db `walloop`, schema `engine`, UUID IDs)
+- Flyway for schema versioning (migrations in `src/main/resources/db/migration`)
+- RabbitMQ for messaging
+- WebSockets (STOMP/SockJS), OpenFeign clients, and (optional) Eureka for service discovery
+- Observability with Micrometer/OTLP (OTEL collector in docker-compose)
+- MapStruct for DTO mapping and Lombok to reduce boilerplate
 
-## Ambiente local com Docker Compose
-1. Pre-requisitos: Docker e Docker Compose recentes.
-2. Suba o stack (app, Postgres, RabbitMQ e OTEL collector):
+## Local environment with Docker Compose
+1. Prerequisites: recent Docker and Docker Compose.
+2. Start the stack (app, Postgres, RabbitMQ, and OTEL collector):
    ```bash
    docker compose up --build
    ```
-3. Servicos expostos:
-   - Aplicacao: `http://localhost:8080`
-   - PostgreSQL: db `walloop`, schema `engine`, usuario/senha `walloop` / `walloop` (porta `5432`)
-   - RabbitMQ: `amqp://localhost:5672` (console em `http://localhost:15672`)
+3. Exposed services:
+   - Application: `http://localhost:8080`
+   - PostgreSQL: db `walloop`, schema `engine`, username/password `walloop` / `walloop` (port `5432`)
+   - RabbitMQ: `amqp://localhost:5672` (console at `http://localhost:15672`)
    - OTLP receiver: `http://localhost:4317`
-4. Para parar e limpar containers/volumes:
+4. To stop and clean containers/volumes:
    ```bash
    docker compose down -v
    ```
 
-## Execucao manual (sem Docker)
-1. Requisitos: JDK 21+ e Maven 3.9+ instalados.
-2. Garanta Postgres e RabbitMQ acessiveis localmente. Valores padrao em `application.yml`:
+## Manual run (without Docker)
+1. Requirements: JDK 21+ and Maven 3.9+ installed.
+2. Ensure Postgres and RabbitMQ are reachable locally. Default values are in `application.yml`:
    - JDBC: `jdbc:postgresql://localhost:5432/walloop`
-   - Schema padrao: `engine` (hibernate.default_schema / Flyway default-schema)
-   - Usuario/senha: `walloop` / `walloop`
-3. Rode migrations e aplicacao:
+   - Default schema: `engine` (hibernate.default_schema / Flyway default-schema)
+   - Username/password: `walloop` / `walloop`
+3. Run migrations and start the app:
    ```bash
    mvn spring-boot:run
    ```
 
 ## Lightning (LND gRPC)
-O engine gera invoices via gRPC direto no LND. A configuracao fica no `application.yml`
-e deve ser fornecida por variaveis de ambiente.
+The engine creates invoices via direct gRPC to LND. Configuration is in `application.yml`
+and must be provided through environment variables.
 
-### Local (arquivos)
-Para rodar localmente, use caminhos para os arquivos `tls.cert` e `admin.macaroon`:
+### Local (files)
+To run locally, use file paths for `tls.cert` and `admin.macaroon`:
 
 ```
 LND_GRPC_HOST=localhost
 LND_GRPC_PORT=10009
-LND_GRPC_CERT_FILE=/caminho/para/tls.cert
-LND_GRPC_MACAROON_FILE=/caminho/para/admin.macaroon
+LND_GRPC_CERT_FILE=/path/to/tls.cert
+LND_GRPC_MACAROON_FILE=/path/to/admin.macaroon
 ```
 
-### Producao (base64)
-Em producao, use base64 via secrets (ex: Fly secrets). Isso evita manter arquivos
-sensiveis no filesystem da aplicacao:
+### Production (base64)
+In production, use base64 through secrets (e.g., Fly secrets). This avoids keeping
+sensitive files on the application filesystem:
 
 ```
 LND_GRPC_HOST=walloop-lightning-node.internal
@@ -62,35 +65,35 @@ LND_GRPC_CERT_BASE64=...
 LND_GRPC_MACAROON_BASE64=...
 ```
 
-Observacao: o macaroon com permissao admin da acesso total ao LND. Trate como segredo.
+Note: an admin-permission macaroon provides full LND access. Treat it as a secret.
 
-### Teste rapido (local)
-Para validar o gRPC, rode a aplicacao e crie uma invoice pelo fluxo do engine.
-Se o LND estiver acessivel e o macaroon valido, a invoice sera criada sem erro.
+### Quick local test
+To validate gRPC, run the app and create an invoice through the engine flow.
+If LND is reachable and the macaroon is valid, the invoice should be created successfully.
 
 ## Lightning / LSP (Amboss Magma)
-O engine pode contratar liquidez inbound via LSP usando a API GraphQL da Amboss.
-O gatilho acontece no step `create_lightning_invoice`: se a liquidez inbound
-ficar abaixo do alvo e nao houver pedido pendente, o engine cria uma ordem no LSP
-e agenda retry.
+The engine can request inbound liquidity via LSP using Amboss GraphQL API.
+The trigger happens in `create_lightning_invoice`: if inbound liquidity
+is below the target and there is no pending request, the engine creates an LSP order
+and schedules a retry.
 
-Configuracoes principais (application.yml):
-- `walloop.lightning.inbound-target-sats`: alvo global de inbound.
-- `walloop.lightning.inbound-check-enabled`: habilita o check de inbound antes da invoice.
-- `walloop.lightning.lsp.base-url`: base URL da API GraphQL.
+Main settings (`application.yml`):
+- `walloop.lightning.inbound-target-sats`: global inbound target.
+- `walloop.lightning.inbound-check-enabled`: enables inbound check before invoice.
+- `walloop.lightning.lsp.base-url`: GraphQL API base URL.
 - `walloop.lightning.lsp.api-key`: API key (Bearer).
-- `walloop.lightning.lsp.node-pubkey`: pubkey do node (override).
+- `walloop.lightning.lsp.node-pubkey`: node pubkey (override).
 
-Observacao: o endpoint GraphQL e fixo no codigo (`/graphql`).
+Note: GraphQL endpoint is fixed in code (`/graphql`).
 
 ## Cache (Caffeine)
-O engine usa Caffeine para reduzir chamadas externas em consultas de par e cotacao.
+The engine uses Caffeine to reduce external calls for pair availability and rates.
 
-Caches ativos:
-- `pairAvailability`: usado em `PairAvailabilityService` (TTL configuravel).
-- `fxRates`: usado pelo `CoinCapFxRateProvider` (TTL configuravel).
+Active caches:
+- `pairAvailability`: used by `PairAvailabilityService` (configurable TTL).
+- `fxRates`: used by `CoinCapFxRateProvider` (configurable TTL).
 
-Config (application.yml):
+Config (`application.yml`):
 ```
 walloop:
   pair-availability:
@@ -102,26 +105,25 @@ walloop:
       cache-seconds: 300
 ```
 
-Observacao: altere os TTLs via `walloop.pair-availability.cache-seconds` e
-`walloop.fee.coincap.cache-seconds` conforme a necessidade do ambiente.
+Note: adjust TTLs via `walloop.pair-availability.cache-seconds` and
+`walloop.fee.coincap.cache-seconds` according to environment needs.
 
 ## Flyway
-- As migrations vivem em `src/main/resources/db/migration`.
-- Migracao baseline `V1.0.0__init_customers.sql` cria o schema `engine`, habilita `pgcrypto` e cria a tabela `customers` com chave primaria UUID.
-- A aplicacao inicia com `spring.jpa.hibernate.ddl-auto=validate` e `baseline-on-migrate=true` para manter o schema controlado pelo Flyway.
+- Migrations live in `src/main/resources/db/migration`.
+- Baseline migration `V1.0.0__init_customers.sql` creates schema `engine`, enables `pgcrypto`, and creates table `customers` with UUID primary key.
+- The application starts with `spring.jpa.hibernate.ddl-auto=validate` and `baseline-on-migrate=true` to keep schema controlled by Flyway.
 
 ## Liquid + Bitcoin (Docker Compose)
-O `docker-compose.yml` inclui `vulpemventures/liquid` e `vulpemventures/bitcoin` para validar pegins via RPC.
+`docker-compose.yml` includes `vulpemventures/liquid` and `vulpemventures/bitcoin` to validate peg-ins via RPC.
 
-### Testnet (config atual)
-- `liquid-node`: `-chain=liquidtestnet` + `-validatepegin=1` com `mainchainrpc*` apontando para `bitcoin-node`.
-- `bitcoin-node`: `-testnet` e RPC em `18332`.
+### Testnet (current config)
+- `liquid-node`: `-chain=liquidtestnet` + `-validatepegin=1` with `mainchainrpc*` pointing to `bitcoin-node`.
+- `bitcoin-node`: `-testnet` and RPC on `18332`.
 
-### Mainnet (como mudar)
-1. Em `liquid-node`, troque `-chain=liquidtestnet` por `-chain=liquidv1`.
-2. Em `bitcoin-node`, remova `-testnet` (ou use `-mainnet`) e use RPC `8332`.
-3. Se expor portas, ajuste `18332:18332` para `8332:8332`.
+### Mainnet (how to switch)
+1. In `liquid-node`, change `-chain=liquidtestnet` to `-chain=liquidv1`.
+2. In `bitcoin-node`, remove `-testnet` (or use `-mainnet`) and use RPC `8332`.
+3. If exposing ports, change `18332:18332` to `8332:8332`.
 
 ## Kubernetes
-Use `kubernetes/deployment.yaml` como base. O deployment espera um secret `walloop-db` com `username` e `password`, e endpoints para Postgres, RabbitMQ e, se necessario, Eureka. Ajuste as credenciais para refletir o database `walloop` e o schema `engine` (variaveis `SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA`, `SPRING_FLYWAY_DEFAULT_SCHEMA` e `SPRING_FLYWAY_SCHEMAS`).
-
+Use `kubernetes/deployment.yaml` as a base. The deployment expects a `walloop-db` secret with `username` and `password`, plus endpoints for Postgres, RabbitMQ, and (if needed) Eureka. Adjust credentials to match database `walloop` and schema `engine` (variables `SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA`, `SPRING_FLYWAY_DEFAULT_SCHEMA`, and `SPRING_FLYWAY_SCHEMAS`).
