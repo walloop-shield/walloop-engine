@@ -3,8 +3,8 @@ spring:
     name: walloop-engine
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:walloop}}
-    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:walloop}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:walloop}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
     hikari:
       minimum-idle: 0
       idle-timeout: 30000
@@ -13,7 +13,6 @@ spring:
       connection-timeout: 30000
       data-source-properties:
         sslmode: require
-        sslrootcert: /app/certs/neon-root-ca.pem
   jpa:
     hibernate:
       ddl-auto: none
@@ -27,8 +26,8 @@ spring:
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:${RABBITMQ_HOST:localhost}}
     port: ${SPRING_RABBITMQ_PORT:${RABBITMQ_PORT:5672}}
-    username: ${RABBITMQ_USER:${RABBITMQ_USERNAME:guest}}
-    password: ${RABBITMQ_PASSWORD:guest}
+    username: ${RABBITMQ_USER:${RABBITMQ_USERNAME:}}
+    password: ${RABBITMQ_PASSWORD:}
     virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:${RABBITMQ_VHOST:/}}
     listener:
       simple:
@@ -42,18 +41,18 @@ spring:
 liquid:
   rpc:
     url: ${LIQUID_RPC_URL:walloop-liquid-node.internal:7041}
-    username: ${LIQUID_RPC_USERNAME:walloop-liquid}
-    password: ${LIQUID_RPC_PASSWORD:walloop-liquid}
+    username: ${LIQUID_RPC_USERNAME:}
+    password: ${LIQUID_RPC_PASSWORD:}
 sideshift:
   base-url: ${SIDESHIFT_BASE_URL:https://sideshift.ai/api/v2}
-  secret: ${SIDESHIFT_SECRET:***REMOVED***}
-  affiliate-id: ***REMOVED***
+  secret: ${SIDESHIFT_SECRET:}
+  affiliate-id: ${SIDESHIFT_AFFILIATE_ID:}
   status-cron: 0 * * * * *
 fixedfloat:
   base-url: ${FIXEDFLOAT_BASE_URL:https://ff.io/api/v2}
-  api-key: ${FIXEDFLOAT_API_KEY:***REMOVED***}
-  api-secret: ${FIXEDFLOAT_API_SECRET:***REMOVED***}
-  refcode: ${FIXEDFLOAT_REFCODE:***REMOVED***}
+  api-key: ${FIXEDFLOAT_API_KEY:}
+  api-secret: ${FIXEDFLOAT_API_SECRET:}
+  refcode: ${FIXEDFLOAT_REFCODE:}
   afftax: 0
   status-cron: 0 * * * * *
 boltz:
@@ -163,3 +162,4 @@ walloop:
       optimism: https://optimistic.etherscan.io
       bitcoin: https://mempool.space
       liquid: https://liquid.network
+

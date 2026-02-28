@@ -23,3 +23,6 @@ logs/
 *.pid
 *.seed
 .mvn/wrapper/maven-wrapper.jar
+
+# Certificates
+certs/
