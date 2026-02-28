@@ -3,8 +3,8 @@ spring:
     name: walloop-engine
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/walloop}
-    username: ${SPRING_DATASOURCE_USERNAME:}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
       minimum-idle: 0
       idle-timeout: 30000
@@ -19,48 +19,48 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    default-schema: ${DB_SCHEMA:engine}
-    schemas: ${DB_SCHEMA:engine}
+    default-schema: engine
+    schemas: engine
     create-schemas: true
     ignore-unsupported-database: true
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:localhost}
     port: ${SPRING_RABBITMQ_PORT:5672}
-    username: ${SPRING_RABBITMQ_USERNAME:}
-    password: ${SPRING_RABBITMQ_PASSWORD:}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
     virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:/}
     listener:
       simple:
         retry:
           enabled: true
-          max-attempts: ${WALLOOP_RABBITMQ_RETRY_MAX_ATTEMPTS:5}
-          initial-interval: ${WALLOOP_RABBITMQ_RETRY_INITIAL_INTERVAL:1000}
-          multiplier: ${WALLOOP_RABBITMQ_RETRY_MULTIPLIER:2.0}
-          max-interval: ${WALLOOP_RABBITMQ_RETRY_MAX_INTERVAL:10000}
+          max-attempts: 5
+          initial-interval: 1000
+          multiplier: 2.0
+          max-interval: 10000
         default-requeue-rejected: false
 liquid:
   rpc:
-    url: ${LIQUID_RPC_URL:walloop-liquid-node.internal:7041}
-    username: ${LIQUID_RPC_USERNAME:}
-    password: ${LIQUID_RPC_PASSWORD:}
+    url: ${LIQUID_RPC_URL}
+    username: ${LIQUID_RPC_USERNAME}
+    password: ${LIQUID_RPC_PASSWORD}
 sideshift:
-  base-url: ${SIDESHIFT_BASE_URL:https://sideshift.ai/api/v2}
-  secret: ${SIDESHIFT_SECRET:}
-  affiliate-id: ${SIDESHIFT_AFFILIATE_ID:}
+  base-url: ${SIDESHIFT_BASE_URL}
+  secret: ${SIDESHIFT_SECRET}
+  affiliate-id: ${SIDESHIFT_AFFILIATE_ID}
   status-cron: 0 * * * * *
 fixedfloat:
-  base-url: ${FIXEDFLOAT_BASE_URL:https://ff.io/api/v2}
-  api-key: ${FIXEDFLOAT_API_KEY:}
-  api-secret: ${FIXEDFLOAT_API_SECRET:}
-  refcode: ${FIXEDFLOAT_REFCODE:}
+  base-url: ${FIXEDFLOAT_BASE_URL}
+  api-key: ${FIXEDFLOAT_API_KEY}
+  api-secret: ${FIXEDFLOAT_API_SECRET}
+  refcode: ${FIXEDFLOAT_REFCODE}
   afftax: 0
   status-cron: 0 * * * * *
 boltz:
-  base-url: ${BOLTZ_BASE_URL:https://api.boltz.exchange/v2}
+  base-url: ${BOLTZ_BASE_URL}
   claim:
     enabled: true
     pending-status: transaction.claim.pending
-    signer-url: ${BOLTZ_CLAIM_SIGNER_URL:http://walloop-lightning-signer.internal:3000}
+    signer-url: ${BOLTZ_CLAIM_SIGNER_URL}
   status-cron: 0 * * * * *
   paid-status: transaction.claimed
   cloud:
@@ -104,19 +104,19 @@ org:
       lnd:
         grpc:
           enabled: true
-          host: ${LND_GRPC_HOST:[fdaa:3a:c627:a7b:5d3:96a9:d10e:2]}
-          port: ${LND_GRPC_PORT:10009}
-          macaroon-base64: ${LND_GRPC_MACAROON_BASE64:}
-          cert-base64: ${LND_GRPC_CERT_BASE64:}
-          macaroon-file-path: ${LND_GRPC_MACAROON_FILE:}
-          cert-file-path: ${LND_GRPC_CERT_FILE:}
+          host: ${LND_GRPC_HOST}
+          port: ${LND_GRPC_PORT}
+          macaroon-base64: ${LND_GRPC_MACAROON_BASE64}
+          cert-base64: ${LND_GRPC_CERT_BASE64}
+          macaroon-file-path: ${LND_GRPC_MACAROON_FILE}
+          cert-file-path: ${LND_GRPC_CERT_FILE}
           
 
 eureka:
   client:
     enabled: ${EUREKA_CLIENT_ENABLED:true}
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL}
     fetch-registry: true
     register-with-eureka: true
   instance:
@@ -128,18 +128,18 @@ walloop:
   pair-availability:
     cache-seconds: 60
   wallet:
-    base-url: ${WALLOOP_WALLET_BASE_URL:http://localhost:8080}
+    base-url: ${WALLOOP_WALLET_BASE_URL}
   lightning:
     invoice-expiry-seconds: 7200
     inbound-check-enabled: true
-    inbound-retry-delay: ${WALLOOP_LIGHTNING_INBOUND_RETRY_DELAY:PT1M}
+    inbound-retry-delay: PT1M
     lsp:
       provider: amboss-magma
       node-pubkey: 030f0b8e9b8b047df76db393dcd9278994020dda10cc909ac294aa4aca778f25b3
-      base-url: ${WALLOOP_LIGHTNING_LSP_BASE_URL:https://api.amboss.space}
-      api-key: ${WALLOOP_LIGHTNING_LSP_API_KEY:}
+      base-url: ${WALLOOP_LIGHTNING_LSP_BASE_URL}
+      api-key: ${WALLOOP_LIGHTNING_LSP_API_KEY}
   fee:
-    platform-percent: 3
+    platform-percent: 0.5
     sideshift-percent: 0.5
     boltz-percent: 0.1
     fixedfloat-percent: 0.5
@@ -147,8 +147,8 @@ walloop:
     rate-provider:
       type: coincap
     coincap:
-      base-url: ${COINCAP_BASE_URL:https://rest.coincap.io/v3}
-      api-key: ${WALLOOP_FEE_COINCAP_API_KEY:}
+      base-url: ${COINCAP_BASE_URL}
+      api-key: ${WALLOOP_FEE_COINCAP_API_KEY}
       usd-brl-rate-id: brazilian-real
       cache-seconds: 300
   explorer:
