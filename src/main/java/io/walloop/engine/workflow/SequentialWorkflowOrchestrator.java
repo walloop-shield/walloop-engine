@@ -107,9 +107,6 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
             StepResult result,
             Instant executedAt
     ) {
-        if (!shouldPublish(step)) {
-            return;
-        }
         workflowStepUpdatePublisher.publish(
                 execution.getId(),
                 execution.getTransactionId(),
@@ -126,9 +123,6 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
             StepStatus status,
             Instant executedAt
     ) {
-        if (!shouldPublish(step)) {
-            return;
-        }
         workflowStepUpdatePublisher.publish(
                 execution.getId(),
                 execution.getTransactionId(),
@@ -137,10 +131,6 @@ public class SequentialWorkflowOrchestrator implements WorkflowOrchestrator {
                 status.name(),
                 executedAt
         );
-    }
-
-    private boolean shouldPublish(WorkflowStep step) {
-        return step != null && !"convert_lightning_to_walloop".equals(step.key());
     }
 }
 
