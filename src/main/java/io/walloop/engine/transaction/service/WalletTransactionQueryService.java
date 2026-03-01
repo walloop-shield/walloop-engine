@@ -1,13 +1,42 @@
 package io.walloop.engine.transaction.service;
 
 import io.walloop.engine.transaction.dto.WalletTransactionDetails;
+import io.walloop.engine.transaction.entity.WalletTransactionEntity;
+import io.walloop.engine.transaction.repository.WalletTransactionRepository;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-public interface WalletTransactionQueryService {
+@Service
+@RequiredArgsConstructor
+public class WalletTransactionQueryService {
 
-    Optional<WalletTransactionDetails> find(UUID id, UUID ownerId);
+    private final WalletTransactionRepository repository;
 
-    WalletTransactionDetails require(UUID id, UUID ownerId);
+    @Transactional(readOnly = true)
+    public Optional<WalletTransactionDetails> find(UUID id, UUID ownerId) {
+        return repository.findByIdAndOwnerId(id, ownerId).map(this::toDetails);
+    }
+
+    @Transactional(readOnly = true)
+    public WalletTransactionDetails require(UUID id, UUID ownerId) {
+        return find(id, ownerId).orElseThrow(() -> new IllegalArgumentException(
+                "Transaction not found for id=" + id + " ownerId=" + ownerId));
+    }
+
+    private WalletTransactionDetails toDetails(WalletTransactionEntity entity) {
+        return new WalletTransactionDetails(
+                entity.getId(),
+                entity.getOwnerId(),
+                entity.getChain(),
+                entity.getCorrelatedAddress(),
+                entity.getNewAddress(),
+                entity.getNewAddress2(),
+                entity.getCreatedAt(),
+                entity.getStatus()
+        );
+    }
 }
 
