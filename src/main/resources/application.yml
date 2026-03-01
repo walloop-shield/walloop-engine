@@ -24,11 +24,11 @@ spring:
     create-schemas: true
     ignore-unsupported-database: true
   rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST:localhost}
-    port: ${SPRING_RABBITMQ_PORT:5672}
-    username: ${SPRING_RABBITMQ_USERNAME}
-    password: ${SPRING_RABBITMQ_PASSWORD}
-    virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:/}
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VHOST:/}
     listener:
       simple:
         retry:
@@ -108,8 +108,8 @@ org:
           port: ${LND_GRPC_PORT}
           macaroon-base64: ${LND_GRPC_MACAROON_BASE64}
           cert-base64: ${LND_GRPC_CERT_BASE64}
-          macaroon-file-path: ${LND_GRPC_MACAROON_FILE}
-          cert-file-path: ${LND_GRPC_CERT_FILE}
+          macaroon-file-path: ${LND_GRPC_MACAROON_FILE:}
+          cert-file-path: ${LND_GRPC_CERT_FILE:}
           
 
 eureka:
