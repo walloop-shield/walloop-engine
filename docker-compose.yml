@@ -1,0 +1,118 @@
+﻿services:
+  app:
+    build:
+      context: .
+    image: walloop-engine:latest
+    container_name: walloop-engine
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      DB_SCHEMA: engine
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/walloop
+      SPRING_DATASOURCE_USERNAME: walloop
+      SPRING_DATASOURCE_PASSWORD: walloop
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VHOST: /
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      EUREKA_CLIENT_ENABLED: "false"
+      SPRING_PROFILES_ACTIVE: docker
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://walloop-otel-collector:4317
+      LIQUID_RPC_URL: liquid-node:7041
+      LIQUID_RPC_USERNAME: rpcuser
+      LIQUID_RPC_PASSWORD: rpcpassword
+    ports:
+      - "8080:8080"
+
+  db:
+    image: postgres:16
+    container_name: walloop-engine-db
+    environment:
+      POSTGRES_DB: walloop
+      POSTGRES_USER: walloop
+      POSTGRES_PASSWORD: walloop
+    ports:
+      - "5432:5432"
+    volumes:
+      - walloop-engine-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U walloop -d walloop"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: walloop-engine-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.93.0
+    container_name: walloop-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"
+
+  liquid-node:
+    image: vulpemventures/liquid:latest
+    container_name: walloop-liquid-node
+    user: "0"
+    depends_on:
+      bitcoin-node:
+        condition: service_started
+    command:
+      - -chain=liquidtestnet
+      - -validatepegin=1
+      - -mainchainrpchost=bitcoin-node
+      - -mainchainrpcport=18332
+      - -mainchainrpcuser=rpcuser
+      - -mainchainrpcpassword=rpcpassword
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0
+      - -rpcuser=rpcuser
+      - -rpcpassword=rpcpassword
+    ports:
+      - "7041:7041"
+    volumes:
+      - liquid-data:/config
+    healthcheck:
+      test: ["CMD", "elements-cli", "-rpcuser=rpcuser", "-rpcpassword=rpcpassword", "getblockchaininfo"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  bitcoin-node:
+    image: vulpemventures/bitcoin:latest
+    container_name: walloop-bitcoin-node
+    command:
+      - -testnet
+      - -server=1
+      - -txindex=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=rpcuser
+      - -rpcpassword=rpcpassword
+    ports:
+      - "18332:18332"
+    volumes:
+      - bitcoin-data:/config
+
+volumes:
+  walloop-engine-db-data:
+  liquid-data:
+  bitcoin-data:

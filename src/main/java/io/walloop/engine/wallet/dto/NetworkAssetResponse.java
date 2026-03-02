@@ -1,0 +1,15 @@
+package io.walloop.engine.wallet.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record NetworkAssetResponse(
+        String network,
+        String mainAsset,
+        String priceId,
+        Integer decimals,
+        List<String> aliases
+) {
+}
+
