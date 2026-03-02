@@ -7,7 +7,7 @@ This repository contains the Walloop Engine service (Java 21, Spring Boot), resp
 ## Development Setup
 
 1. Install Java 21 and Maven 3.9+
-2. Start dependencies (`Postgres`, `RabbitMQ`) via local stack
+2. Follow [INSTALLATION.md](./INSTALLATION.md) for dependency startup and required environment variables
 3. Run:
 
 ```bash

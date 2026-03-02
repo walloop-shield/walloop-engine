@@ -11,8 +11,9 @@
         condition: service_healthy
       otel-collector:
         condition: service_started
+      liquid-node:
+        condition: service_healthy
     environment:
-      DB_SCHEMA: engine
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/walloop
       SPRING_DATASOURCE_USERNAME: walloop
       SPRING_DATASOURCE_PASSWORD: walloop
@@ -22,11 +23,30 @@
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       EUREKA_CLIENT_ENABLED: "false"
+      EUREKA_CLIENT_SERVICE_URL: http://host.docker.internal:8761/eureka/
       SPRING_PROFILES_ACTIVE: docker
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://walloop-otel-collector:4317
-      LIQUID_RPC_URL: liquid-node:7041
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      LIQUID_RPC_URL: http://liquid-node:7041
       LIQUID_RPC_USERNAME: rpcuser
       LIQUID_RPC_PASSWORD: rpcpassword
+      SIDESHIFT_BASE_URL: https://sideshift.ai/api/v2
+      SIDESHIFT_SECRET: dummy
+      SIDESHIFT_AFFILIATE_ID: dummy
+      FIXEDFLOAT_BASE_URL: https://ff.io/api/v2
+      FIXEDFLOAT_API_KEY: dummy
+      FIXEDFLOAT_API_SECRET: dummy
+      FIXEDFLOAT_REFCODE: dummy
+      BOLTZ_BASE_URL: https://api.boltz.exchange
+      BOLTZ_CLAIM_SIGNER_URL: http://host.docker.internal:8090
+      LND_GRPC_HOST: host.docker.internal
+      LND_GRPC_PORT: 10009
+      LND_GRPC_MACAROON_BASE64: ZHVtbXk=
+      LND_GRPC_CERT_BASE64: ZHVtbXk=
+      WALLOOP_WALLET_BASE_URL: http://host.docker.internal:8084
+      WALLOOP_LIGHTNING_LSP_BASE_URL: https://api.amboss.space
+      WALLOOP_LIGHTNING_LSP_API_KEY: dummy
+      COINCAP_BASE_URL: https://api.coincap.io/v2
+      WALLOOP_FEE_COINCAP_API_KEY: dummy
     ports:
       - "8080:8080"
 
